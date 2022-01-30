@@ -39,6 +39,7 @@
             this.toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
             this.toolStripButton1 = new System.Windows.Forms.ToolStripButton();
             this.toolStripButton2 = new System.Windows.Forms.ToolStripButton();
+            this.tsbQuote = new System.Windows.Forms.ToolStripButton();
             this.label3 = new System.Windows.Forms.Label();
             this.SchemaOwner = new System.Windows.Forms.TextBox();
             this.ReadSchema = new System.Windows.Forms.Button();
@@ -52,7 +53,6 @@
             this.errorProvider1 = new System.Windows.Forms.ErrorProvider(this.components);
             this.backgroundWorker1 = new System.ComponentModel.BackgroundWorker();
             this.treeContext = new System.Windows.Forms.ContextMenuStrip(this.components);
-            this.tsbQuote = new System.Windows.Forms.ToolStripButton();
             this.statusStrip1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).BeginInit();
             this.splitContainer1.Panel1.SuspendLayout();
@@ -169,6 +169,19 @@
             this.toolStripButton2.ToolTipText = "Compare to another database";
             this.toolStripButton2.Click += new System.EventHandler(this.CompareClick);
             // 
+            // tsbQuote
+            // 
+            this.tsbQuote.Checked = true;
+            this.tsbQuote.CheckOnClick = true;
+            this.tsbQuote.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.tsbQuote.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
+            this.tsbQuote.Image = ((System.Drawing.Image)(resources.GetObject("tsbQuote.Image")));
+            this.tsbQuote.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.tsbQuote.Name = "tsbQuote";
+            this.tsbQuote.Size = new System.Drawing.Size(87, 22);
+            this.tsbQuote.Text = "Escape Names";
+            this.tsbQuote.Click += new System.EventHandler(this.tsbQuote_Click);
+            // 
             // label3
             // 
             this.label3.AutoSize = true;
@@ -277,19 +290,6 @@
             this.treeContext.Name = "treeContext";
             this.treeContext.Size = new System.Drawing.Size(61, 4);
             // 
-            // tsbQuote
-            // 
-            this.tsbQuote.Checked = true;
-            this.tsbQuote.CheckOnClick = true;
-            this.tsbQuote.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.tsbQuote.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
-            this.tsbQuote.Image = ((System.Drawing.Image)(resources.GetObject("tsbQuote.Image")));
-            this.tsbQuote.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.tsbQuote.Name = "tsbQuote";
-            this.tsbQuote.Size = new System.Drawing.Size(87, 22);
-            this.tsbQuote.Text = "Escape Names";
-            this.tsbQuote.Click += new System.EventHandler(this.tsbQuote_Click);
-            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -298,7 +298,7 @@
             this.Controls.Add(this.splitContainer1);
             this.Controls.Add(this.statusStrip1);
             this.Name = "Form1";
-            this.Text = "Simple Database Schema Viewer";
+            this.Text = "GraphQL .Net Gen";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.Form1_FormClosing);
             this.Load += new System.EventHandler(this.Form1_Load);
             this.statusStrip1.ResumeLayout(false);

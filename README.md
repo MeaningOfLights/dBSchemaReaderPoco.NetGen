@@ -1,16 +1,11 @@
-﻿# DatabaseSchemaReader
+﻿# dB Schema Reader Poco .Net Gen
 
 A simple, cross-database facade over .Net 2.0 DbProviderFactories to read database metadata.
 
 Any ADO provider can be read  (SqlServer, SqlServer CE 4, MySQL, SQLite, System.Data.OracleClient, ODP, Devart, PostgreSql, DB2...) into a single standard model. For .net Core, we support SqlServer, SqlServer CE 4, SQLite, PostgreSql, MySQL and Oracle (even if the database clients  are not yet available in .net Core, we are ready for them).
 
-https://github.com/martinjw/dbschemareader or https://dbschemareader.codeplex.com/
 
-https://dbschemareader.codeplex.com/documentation
-
-Nuget: Install-Package DatabaseSchemaReader [![Nuget](https://img.shields.io/nuget/v/DatabaseSchemaReader.svg) ](https://www.nuget.org/packages/DatabaseSchemaReader/)
-
-[![Appveyor Build Status](https://ci.appveyor.com/api/projects/status/github/martinjw/dbschemareader?svg=true)](https://ci.appveyor.com/project/martinjw/dbschemareader)
+## Purpose
 
 * Database schema read from most ADO providers
 * Simple .net code generation:
@@ -23,60 +18,36 @@ Nuget: Install-Package DatabaseSchemaReader [![Nuget](https://img.shields.io/nug
 * Compare two schemas to generate a migration script
 * Simple cross-database migrations generator
 
-## Use
 
-* Full .net framework (v3.5, v4.0, v4.5)
-```C#
-//To use it simply specify the connection string and ADO provider (eg System.Data,SqlClient or System.Data.OracleClient)
-const string providername = "System.Data.SqlClient";
-const string connectionString = @"Data Source=.\SQLEXPRESS;Integrated Security=true;Initial Catalog=Northwind";
+## History
 
-//Create the database reader object.
-var dbReader = new DatabaseReader(connectionString, providername);
-//For Oracle, you should always specify the Owner (Schema).
-//dbReader.Owner = "HR";
+https://github.com/martinjw/dbschemareader (originally https://dbschemareader.codeplex.com/)
 
-//Then load the schema (this will take a little time on moderate to large database structures)
-var schema = dbReader.ReadAll();
 
-//There are no datatables, and the structure is identical for all providers.
-foreach (var table in schema.Tables)
-{
-  //do something with your model
-}
-```
-* .net Core (netStandard1.5)
-```C#
-//In .net Core, create the connection with the connection string
-using (var connection = new SqlConnection("Data Source=.\SQLEXPRESS;Integrated Security=true;Initial Catalog=Northwind"))
-{
-    var dbReader = new DatabaseSchemaReader.DatabaseReader(connection);
-    //Then load the schema (this will take a little time on moderate to large database structures)
-    var schema = dbReader.ReadAll();
+## How it works
 
-    //The structure is identical for all providers (and the full framework).
-    foreach (var table in schema.Tables)
-    {
-      //do something with your model
-    }
-}
-```
-## UIs
+The Application reads database schemas by fetching all the Drivers installed on your Machine in the Form1 Constructor method:
 
-There are two simple UIs.
+        public Form1()
+        {
+            InitializeComponent();
 
-* DatabaseSchemaViewer. It reads all the schema and displays it in a treeview. It also includes options for
- - code generation, table DDL and stored procedure generation.
- - comparing the schema to another database.
+            var TheDriverDataTable = DbProviderFactories.GetFactoryClasses();
 
-* CopyToSQLite. It reads all the schema and creates a new SQLite database file with the same tables and data. If Sql Server CE 4.0 is detected, it can do the same for that database. These databases do not have the full range of data types as other databases, so creating tables may fail (e.g. SqlServer CE 4 does not have VARCHAR(MAX)). In addition, copying data may violate foreign key constraints (especially for identity primary keys) and will fail.
 
-## Building the Source
+TheDriverDataTable contains all the drivers on your machine. If you're missing one, for example the PostGres driver you can add it to your app.config or web.config:
 
-* If you use Visual Studio *2017* open DatabaseSchemaReader.sln (includes .net Core)
-  * You can also use the command line "build.bat" (msbuild)
-  * You cannot use the command line "dotnet build" because Core tooling cannot build v3.5 (see https://github.com/Microsoft/msbuild/issues/1333)
-* If you use Visual Studio *2015* open DatabaseSchemaReader2015.sln (does not include .net Core; v3.5-v4.6 only)
+  <system.data>
+    <DbProviderFactories>
+      <add name="Npgsql Data Provider" invariant="Npgsql" description=".Net Data Provider for PostgreSQL" type="Npgsql.NpgsqlFactory, Npgsql, Culture=neutral, PublicKeyToken=5d8b90d52f46fda7"/>
+    </DbProviderFactories>
+  </system.data>
+
+The driver will now be listed in the DropDownList in the Application, for it to work you need the .Net Data Provider for PostgreSQL DLL in your bin folder. You can install the DLL dependancy via the NuGet package: Npgsql
+
+After specifying the Driver and confirming the Connection String is correct, click the "Read Schema" button. If there are errors its due to missing drivers or incorrect connection string.
+
+Once the Schema is read click the "Code Gen" button to generate a range of Plain Old Class Objects (NHibernate, EF, Ria, etc).
 
 
 

@@ -11,7 +11,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>DatabaseSchemaReaderTest</RootNamespace>
     <AssemblyName>DatabaseSchemaReaderTest</AssemblyName>
-    <TargetFrameworkVersion>v4.6</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <ProjectTypeGuids>{3AC096D0-A1C2-E12C-1390-A8335801FDAB};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
     <SccProjectName>SAK</SccProjectName>
@@ -55,6 +55,9 @@
   <ItemGroup>
     <Reference Include="BouncyCastle.Crypto, Version=1.8.5.0, Culture=neutral, PublicKeyToken=0e99375e54769942">
       <HintPath>..\packages\BouncyCastle.1.8.5\lib\BouncyCastle.Crypto.dll</HintPath>
+    </Reference>
+    <Reference Include="DatabaseSchemaReader">
+      <HintPath>..\DatabaseSchemaReader\bin\Debug\net40\DatabaseSchemaReader.dll</HintPath>
     </Reference>
     <Reference Include="FirebirdSql.Data.FirebirdClient, Version=7.10.1.0, Culture=neutral, PublicKeyToken=3750abcc3150b00c, processorArchitecture=MSIL">
       <HintPath>..\packages\FirebirdSql.Data.FirebirdClient.7.10.1\lib\net452\FirebirdSql.Data.FirebirdClient.dll</HintPath>
@@ -357,14 +360,7 @@
         </ProjectReference>
       </ItemGroup>
     </When>
-    <When Condition="$(MSBuildToolsVersion) &gt; 14.0">
-      <ItemGroup>
-        <ProjectReference Include="..\DatabaseSchemaReader\DatabaseSchemaReader.csproj">
-          <Project>{8280afb4-9066-4656-a80e-23b859e5299c}</Project>
-          <Name>DatabaseSchemaReader</Name>
-        </ProjectReference>
-      </ItemGroup>
-    </When>
+    <When Condition="$(MSBuildToolsVersion) &gt; 14.0" />
   </Choose>
   <ItemGroup>
     <None Include="App.config">
