@@ -1,8 +1,11 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text;
 using DatabaseSchemaReader.CodeGen.CodeFirst;
+using DatabaseSchemaReader.CodeGen.GraphGL;
 using DatabaseSchemaReader.CodeGen.NHibernate;
 using DatabaseSchemaReader.CodeGen.Procedures;
 using DatabaseSchemaReader.DataSchema;
@@ -67,24 +70,71 @@ namespace DatabaseSchemaReader.CodeGen
             if (!directory.Exists)
                 throw new InvalidOperationException("Directory does not exist: " + directory.FullName);
 
+
+            List<DatabaseConstraint> foreignKeyReverseGetLookUps = new List<DatabaseConstraint>();            
+            StringBuilder sbDbContext = new StringBuilder();
+            StringBuilder sbMutations = new StringBuilder();
+            StringBuilder sbQueries = new StringBuilder();
+            StringBuilder sbSubscriptions = new StringBuilder();
+            
             var pw = CreateProjectWriter();
 
             InitMappingProjects(directory, pw);
             _mappingNamer = new MappingNamer();
 
+            List<DatabaseTable> tables = new List<DatabaseTable>();
             foreach (var table in _schema.Tables)
             {
                 if (FilterIneligible(table)) continue;
+                tables.Add(table);
+            }
+
+            if (_codeWriterSettings.CodeTarget == CodeTarget.PocoGraphGL)
+            {
+                foreach (var table in _schema.Tables)
+                {
+                    foreach (var foreignKeyChild in table.ForeignKeyChildren)
+                    {
+                        if ( table.IsSharedPrimaryKey(foreignKeyChild)) continue;
+                        foreignKeyReverseGetLookUps.Add(new DatabaseConstraint { TableName = foreignKeyChild.Name, RefersToTable = table.Name, RefersToConstraint = foreignKeyChild.PrimaryKeyColumn.Name });
+                    }
+                }
+
+                sbDbContext.Append(GraphQLdBContext.GetGraphGLUsingStatements(_codeWriterSettings));
+                sbDbContext.Append(GraphQLdBContext.BeginClass());
+
+                sbMutations.Append(GraphQLMutation.GetGraphGLUsingStatements(tables, _codeWriterSettings));
+                sbMutations.Append(GraphQLMutation.BeginClass());
+
+                sbQueries.Append(GraphQLQuery.GetGraphGLUsingStatements(_codeWriterSettings));
+                sbQueries.Append(GraphQLQuery.BeginClass());
+
+                sbSubscriptions.Append(GraphQLSubscription.GetGraphGLUsingStatements(_codeWriterSettings));
+                sbSubscriptions.Append(GraphQLSubscription.BeginClass());
+            }
+
+                
+            foreach (var table in tables) //_schema.Tables)
+            {
+                //if (FilterIneligible(table)) continue;
                 var className = table.NetName;
                 UpdateEntityNames(className, table.Name);
 
                 var cw = new ClassWriter(table, _codeWriterSettings);
                 var txt = cw.Write();
 
-                var fileName = WriteClassFile(directory, className, txt);
+                var fileName = WriteClassFile(new DirectoryInfo(directory.FullName +"\\Models"), className, txt);
                 pw.AddClass(fileName);
 
-                WriteMapping(table, pw);
+                WriteMapping(table, pw, foreignKeyReverseGetLookUps);
+
+                if (_codeWriterSettings.CodeTarget == CodeTarget.PocoGraphGL)
+                {
+                    sbDbContext.Append(GraphQLdBContext.AddContext(table.Name));
+                    sbMutations.Append(GraphQLMutation.AddContext(table));
+                    sbQueries.Append(GraphQLQuery.AddContext(table));
+                    sbSubscriptions.Append(GraphQLSubscription.AddContext(table));
+                }
             }
 
             if (_codeWriterSettings.IncludeViews)
@@ -100,16 +150,14 @@ namespace DatabaseSchemaReader.CodeGen
                     var fileName = WriteClassFile(directory, className, txt);
                     pw.AddClass(fileName);
 
-                    WriteMapping(view, pw);
+                    WriteMapping(view, pw, null);
                 }
             }
 
 
             string contextName = null;
-            if (IsCodeFirst())
-            {
-                contextName = WriteDbContext(directory, pw);
-            }
+            if (IsCodeFirst() && _codeWriterSettings.CodeTarget != CodeTarget.PocoGraphGL) contextName = WriteDbContext(directory, pw);
+            
 
             //we could write functions (at least scalar functions- not table value functions)
             //you have to check the ReturnType (and remove it from the arguments collections).
@@ -118,10 +166,42 @@ namespace DatabaseSchemaReader.CodeGen
                 WriteStoredProcedures(directory.FullName, pw);
                 WritePackages(directory.FullName, pw);
             }
-            if (_codeWriterSettings.WriteUnitTest)
-                WriteUnitTest(directory.FullName, contextName);
+            if (_codeWriterSettings.WriteUnitTest) WriteUnitTest(directory.FullName, contextName);
 
-            WriteProjectFile(directory, pw);
+            if (_codeWriterSettings.CodeTarget == CodeTarget.PocoGraphGL)
+            {
+                sbMutations.Append(GraphQLMutation.EndClass());
+                sbQueries.Append(GraphQLQuery.EndClass());
+                sbSubscriptions.Append(GraphQLSubscription.EndClass());
+
+                sbDbContext.Append(GraphQLdBContext.BeginReferentialIntegrity());
+                foreach (var fkeyRel in foreignKeyReverseGetLookUps)
+                {
+                    sbDbContext.Append(GraphQLdBContext.AddDBReferentialIntegrity(fkeyRel));
+                }
+                sbDbContext.AppendLine(GraphQLdBContext.EndReferentialIntegrity());
+                sbDbContext.Append(GraphQLdBContext.EndClass());
+
+                WriteClassFile(directory, "AppDbContext", sbDbContext.ToString());
+                WriteClassFile(directory, "Mutation", sbMutations.ToString());
+                WriteClassFile(directory, "Query", sbQueries.ToString());
+                WriteClassFile(directory, "Subscription", sbSubscriptions.ToString());
+
+                WriteClassFile(directory, "Program", GraphQLProjectWriter.GenerateProgramFile(_codeWriterSettings));
+                WriteClassFile(directory, "Startup", GraphQLProjectWriter.GenerateStartupFile(tables, _codeWriterSettings));
+                WriteClassFile(directory, _codeWriterSettings.Namespace, GraphQLProjectWriter.GenerateProjectFile(), ".csproj");
+                WriteClassFile(directory, "launchSettings", GraphQLProjectWriter.GenerateLaunchSettingsFile(), ".json");
+                WriteClassFile(directory, "appsettings", GraphQLProjectWriter.GenerateAppSettings(_schema.ConnectionString), ".json");
+                WriteClassFile(directory, "appsettings.Development", GraphQLProjectWriter.GenerateAppSettings(_schema.ConnectionString), ".json");
+
+                WriteClassFile(new DirectoryInfo(directory.FullName + "\\.vscode"), "launch", GraphQLProjectWriter.GenerateLaunchDebugFile(_codeWriterSettings), ".json");
+                WriteClassFile(new DirectoryInfo(directory.FullName + "\\.vscode"), "tasks", GraphQLProjectWriter.GenerateTaskDebugFile(_codeWriterSettings), ".json");
+            }
+            else
+            {
+                //The GraphQL Poco has its own .Net 6.0 csproj file
+                WriteProjectFile(directory, pw);
+            }
         }
 
         /// <summary>
@@ -134,9 +214,9 @@ namespace DatabaseSchemaReader.CodeGen
             return pw;
         }
 
-        private static string WriteClassFile(DirectoryInfo directory, string className, string txt)
+        private static string WriteClassFile(DirectoryInfo directory, string className, string txt, string fileExtension = ".cs")
         {
-            var fileName = className + ".cs";
+            var fileName = className + fileExtension;
             var path = Path.Combine(directory.FullName, fileName);
             if (!directory.Exists) directory.Create();
             File.WriteAllText(path, txt);
@@ -168,6 +248,7 @@ namespace DatabaseSchemaReader.CodeGen
         private bool IsCodeFirst()
         {
             return _codeWriterSettings.CodeTarget == CodeTarget.PocoEntityCodeFirst ||
+                _codeWriterSettings.CodeTarget == CodeTarget.PocoGraphGL ||
                 _codeWriterSettings.CodeTarget == CodeTarget.PocoEfCore;
         }
 
@@ -257,7 +338,7 @@ namespace DatabaseSchemaReader.CodeGen
                 xml);
         }
 
-        private void WriteMapping(DatabaseTable table, ProjectWriter pw)
+        private void WriteMapping(DatabaseTable table, ProjectWriter pw, List<DatabaseConstraint> foreignKeyReverseGetLookUps)
         {
             string fileName;
             switch (_codeWriterSettings.CodeTarget)
@@ -269,7 +350,7 @@ namespace DatabaseSchemaReader.CodeGen
                 case CodeTarget.PocoNHibernateHbm:
                     //TPT subclasses are mapped in base class
                     if (table.FindInheritanceTable() != null) return;
-                    var mw = new MappingWriter(table, _codeWriterSettings);
+                    var mw = new NHibernate.MappingWriter(table, _codeWriterSettings);
                     var txt = mw.Write();
 
                     fileName = table.NetName + ".hbm.xml";
@@ -289,6 +370,10 @@ namespace DatabaseSchemaReader.CodeGen
                     File.WriteAllText(filePath, cfmap);
                     pw.AddClass(@"Mapping\" + fileName);
                     break;
+                case CodeTarget.PocoGraphGL:
+                    fileName = WriteGraphQLMapping(table, foreignKeyReverseGetLookUps);
+                    pw.AddClass(@"Mapping\" + fileName);
+                    break;
             }
         }
 
@@ -302,6 +387,16 @@ namespace DatabaseSchemaReader.CodeGen
             return fileName;
         }
 
+        private string WriteGraphQLMapping(DatabaseTable table, List<DatabaseConstraint> foreignKeyReverseGetLookUps)
+        {
+            var graphQLMapping = new GraphGLMappingWriter(table, _codeWriterSettings, _mappingNamer, foreignKeyReverseGetLookUps);
+            var txt = graphQLMapping.Write();
+            var fileName = graphQLMapping.MappingClassName + ".cs";
+            var path = Path.Combine(_mappingPath, fileName);
+            File.WriteAllText(path, txt);
+            return fileName;
+
+        }
         private void WriteStoredProcedures(string directoryFullName, ProjectWriter pw)
         {
             if (!_schema.StoredProcedures.Any()) return;

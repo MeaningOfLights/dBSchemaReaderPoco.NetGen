@@ -55,7 +55,7 @@ namespace DatabaseSchemaReader.CodeGen
 
             if (!string.IsNullOrEmpty(_codeWriterSettings.Namespace))
             {
-                _cb.BeginNest("namespace " + _codeWriterSettings.Namespace);
+                _cb.BeginNest("namespace " + _codeWriterSettings.Namespace + ".Models");
             }
 
             if (codeTarget == CodeTarget.PocoRiaServices)
@@ -124,8 +124,15 @@ namespace DatabaseSchemaReader.CodeGen
 
             foreach (var column in _table.Columns)
             {
+                bool isGraphQL = IsGraphQLFramework();
                 if (column.IsPrimaryKey) continue;
+                if (column.IsForeignKey && isGraphQL)
+                {
+                    WriteColumn(column, isGraphQL);
+                    continue;
+                }
                 if (column.IsForeignKey) continue;
+            
                 WriteColumn(column);
             }
 
@@ -183,8 +190,16 @@ namespace DatabaseSchemaReader.CodeGen
         {
             return _codeWriterSettings.CodeTarget == CodeTarget.PocoEntityCodeFirst ||
                 _codeWriterSettings.CodeTarget == CodeTarget.PocoRiaServices ||
-                _codeWriterSettings.CodeTarget == CodeTarget.PocoEfCore;
+                _codeWriterSettings.CodeTarget == CodeTarget.PocoEfCore ||
+                _codeWriterSettings.CodeTarget == CodeTarget.PocoGraphGL;
         }
+
+        private bool IsGraphQLFramework()
+        {
+            return 
+                _codeWriterSettings.CodeTarget == CodeTarget.PocoGraphGL;
+        }
+
 
         private bool IsNHibernate()
         {
@@ -220,6 +235,7 @@ namespace DatabaseSchemaReader.CodeGen
             {
                 if (foreignKey.IsManyToManyTable() && _codeWriterSettings.CodeTarget == CodeTarget.PocoEntityCodeFirst)
                 {
+                    //TO DO for GraphQL!!!
                     WriteManyToManyCollection(foreignKey);
                     continue;
                 }
@@ -228,7 +244,8 @@ namespace DatabaseSchemaReader.CodeGen
                     if (hasTablePerTypeInheritance)
                         continue;
                     //type and property name are the same
-                    _cb.AppendAutomaticProperty(foreignKey.NetName, foreignKey.NetName, true);
+                    bool useVirtual = !IsGraphQLFramework(); //JT I DONT want derived classes to be able to override this property. It's restricted to a the dB tables implementation - for now!
+                    _cb.AppendAutomaticProperty(foreignKey.NetName, foreignKey.NetName, useVirtual);
                     continue;
                 }
 
@@ -420,7 +437,8 @@ namespace DatabaseSchemaReader.CodeGen
             var propertyName = _codeWriterSettings.Namer.ForeignKeyName(_table, foreignKey);
             var dataType = refTable.NetName;
 
-            _cb.AppendAutomaticProperty(dataType, propertyName);
+            bool useVirtual = !IsGraphQLFramework();
+            _cb.AppendAutomaticProperty(dataType, propertyName, useVirtual);
 
             if (IsEntityFramework() && _codeWriterSettings.UseForeignKeyIdProperties)
             {

@@ -29,5 +29,9 @@
         /// Entities for Entity Framework Core mapping
         /// </summary>
         PocoEfCore,
+        /// <summary>
+        /// Entities for GraphQL mapping
+        /// </summary>
+        PocoGraphGL,
     }
 }

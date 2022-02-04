@@ -1,4 +1,41 @@
-﻿# dB Schema Reader Poco .Net Gen
+﻿
+IMPORTANT!!!!!!!!
+
+
+CODING CHANGES
+==============================
+For some reason you need to delete the bin & obj folders in both projects:
+\dBSchemaReaderPoco.NetGen\DatabaseSchemaViewer 
+\dBSchemaReaderPoco.NetGen\DatabaseSchemaReader
+
+
+COMPILING
+==============================
+
+BUILD DatabaseSchemaReader.csproj - that will fail
+
+Then run the project and ignore the one error:
+
+Severity	Code	Description	Project	File	Line	Suppression State
+Error	MSB3644	The reference assemblies for .NETFramework,Version=v4.5 were not found. To resolve this, install the Developer Pack
+(SDK/Targeting Pack) for this framework version or retarget your application. You can download .NET Framework Developer Packs at 
+https://aka.ms/msbuild/developerpacks	DatabaseSchemaReader
+
+
+RUNNING
+==============================
+
+It will run and load up an 404 page..
+
+Next Visit:
+https://localhost:5001/ui/voyager and https://localhost:5001/graphql/
+
+If you haven't created a Database yet the scripts are located:
+https://github.com/MeaningOfLights/dBSchemaReaderPoco.NetGen/tree/master/DatabaseSchemaViewer/TestDatabases
+
+
+
+# dB Schema Reader Poco .Net Gen
 
 A simple, cross-database facade over .Net 2.0 DbProviderFactories to read database metadata.
 
@@ -21,7 +58,13 @@ Any ADO provider can be read  (SqlServer, SqlServer CE 4, MySQL, SQLite, System.
 
 ## History
 
-https://github.com/martinjw/dbschemareader (originally https://dbschemareader.codeplex.com/)
+CREDIT - Original https://dbschemareader.codeplex.com/
+
+CREDIT - DB SCHEMA READER:
+https://github.com/martinjw/dbschemareader
+
+ CREDIT - GRAPHQL Poco.Net Gen:
+https://github.com/MeaningOfLights/dBSchemaReaderPoco.NetGen
 
 
 ## How it works

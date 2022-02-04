@@ -110,7 +110,7 @@ namespace DatabaseSchemaReader.CodeGen
         /// </summary>
         /// <param name="name">The name.</param>
         /// <returns></returns>
-        private static string MakeSingular(string name)
+        public static string MakeSingular(string name)
         {
             if (name.EndsWith("ss", StringComparison.OrdinalIgnoreCase))
             {

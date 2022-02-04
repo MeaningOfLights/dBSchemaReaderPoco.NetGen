@@ -33,8 +33,7 @@ namespace DatabaseSchemaViewer
             }
             _installedProviders.Sort();
             DataProviders.DataSource = _installedProviders;
-            //DataProviders.DisplayMember = invariantname;
-            //DataProviders.ValueMember = invariantname;
+            SelectProvider(Properties.Settings.Default.Provider);
         }
 
         private void FormDragDrop(object sender, DragEventArgs e)
@@ -86,7 +85,6 @@ namespace DatabaseSchemaViewer
 
         private void SelectProvider(string provider)
         {
-            if (!_installedProviders.Contains(provider)) provider = "System.Data.SqlClient";
             DataProviders.SelectedItem = provider;
         }
 

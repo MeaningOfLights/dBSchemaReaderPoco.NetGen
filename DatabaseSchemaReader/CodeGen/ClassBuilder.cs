@@ -1,4 +1,5 @@
-﻿using System.Globalization;
+﻿using System;
+using System.Globalization;
 using System.Text;
 
 namespace DatabaseSchemaReader.CodeGen
@@ -18,7 +19,8 @@ namespace DatabaseSchemaReader.CodeGen
         /// <param name="s">The string.</param>
         public void AppendLine(string s)
         {
-            _sb.AppendLine(_indent + s);
+            _sb.Append(_indent);
+            _sb.AppendLine(s);
         }
 
         /// <summary>
@@ -28,15 +30,19 @@ namespace DatabaseSchemaReader.CodeGen
         /// <param name="args">The arguments.</param>
         public void AppendFormat(string s, params object[] args)
         {
-            _sb.AppendLine(_indent + string.Format(CultureInfo.InvariantCulture, s, args));
+            _sb.Append(_indent);
+            _sb.AppendLine(string.Format(CultureInfo.InvariantCulture, s, args));
         }
 
         internal void AppendXmlSummary(string summary)
         {
             if (string.IsNullOrEmpty(summary)) return;
-            _sb.AppendLine(_indent + "/// <summary>");
-            _sb.AppendLine(_indent + "/// " + summary);
-            _sb.AppendLine(_indent + "/// </summary>");
+            _sb.Append(_indent);
+            _sb.AppendLine("/// <summary>");
+            _sb.Append(_indent);
+            _sb.AppendLine("/// " + summary);
+            _sb.Append(_indent);
+            _sb.AppendLine("/// </summary>");
         }
 
         internal Nester BeginNest(string s)
@@ -46,10 +52,11 @@ namespace DatabaseSchemaReader.CodeGen
 
         internal Nester BeginNest(string s, string summary)
         {
-            _sb.AppendLine();
             AppendXmlSummary(summary);
-            _sb.AppendLine(_indent + s);
-            _sb.AppendLine(_indent + "{");
+            _sb.Append(_indent);
+            _sb.AppendLine(s); 
+            _sb.Append(_indent);
+            _sb.AppendLine("{");
             PushIndent();
             return new Nester(this);
         }
@@ -57,8 +64,10 @@ namespace DatabaseSchemaReader.CodeGen
         internal Nester BeginBrace(string s)
         {
             //simple bracing, no leading line
-            _sb.AppendLine(_indent + s);
-            _sb.AppendLine(_indent + "{");
+            _sb.Append(_indent);
+            _sb.AppendLine(s);
+            _sb.Append(_indent);
+            _sb.AppendLine("{");
             PushIndent();
             return new Nester(this);
         }
@@ -104,7 +113,8 @@ namespace DatabaseSchemaReader.CodeGen
         internal void EndNest()
         {
             PopIndent(); //pop before writing close brace
-            _sb.AppendLine(_indent + "}");
+            _sb.Append(_indent);
+            _sb.AppendLine("}");
         }
 
         private void PushIndent()
@@ -115,6 +125,8 @@ namespace DatabaseSchemaReader.CodeGen
         private void PopIndent()
         {
             _indentLevel--;
+            //if (_indentLevel > -1) throw new Exception("Developer Error, you've used one extra EndNest than needed... FIX IT!");
+            //if (_indentLevel > -1) 
             _indent = new string(' ', _indentLevel * 4);
         }
 

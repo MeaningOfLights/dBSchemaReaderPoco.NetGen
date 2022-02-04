@@ -23,51 +23,30 @@ namespace DatabaseSchemaViewer.Properties {
             }
         }
         
-        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Configuration.ApplicationScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("dbo")]
         public string SchemaOwner {
             get {
                 return ((string)(this["SchemaOwner"]));
             }
-            set {
-                this["SchemaOwner"] = value;
-            }
         }
         
-        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Configuration.ApplicationScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("Data Source=.\\SQLEXPRESS;Integrated Security=true;Initial Catalog=Northwind")]
+        [global::System.Configuration.DefaultSettingValueAttribute("Server=.;Database=CommandsDBGraphql;Integrated Security=True;")]
         public string ConnectionString {
             get {
                 return ((string)(this["ConnectionString"]));
             }
-            set {
-                this["ConnectionString"] = value;
-            }
         }
         
-        [global::System.Configuration.UserScopedSettingAttribute()]
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("C:\\Temp\\")]
-        public string CodeGenFilePath {
-            get {
-                return ((string)(this["CodeGenFilePath"]));
-            }
-            set {
-                this["CodeGenFilePath"] = value;
-            }
-        }
-        
-        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Configuration.ApplicationScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("Domain")]
         public string CodeGenNamespace {
             get {
                 return ((string)(this["CodeGenNamespace"]));
-            }
-            set {
-                this["CodeGenNamespace"] = value;
             }
         }
         
@@ -95,111 +74,99 @@ namespace DatabaseSchemaViewer.Properties {
             }
         }
         
-        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Configuration.ApplicationScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("Data Source=.\\SQLEXPRESS;Integrated Security=true;Initial Catalog=Northwind")]
         public string CompareConnectionString {
             get {
                 return ((string)(this["CompareConnectionString"]));
             }
-            set {
-                this["CompareConnectionString"] = value;
-            }
         }
         
-        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Configuration.ApplicationScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("True")]
         public bool CodeGenReadProcedures {
             get {
                 return ((bool)(this["CodeGenReadProcedures"]));
             }
-            set {
-                this["CodeGenReadProcedures"] = value;
-            }
         }
         
-        [global::System.Configuration.UserScopedSettingAttribute()]
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("0")]
-        public int CodeGenProjectType {
-            get {
-                return ((int)(this["CodeGenProjectType"]));
-            }
-            set {
-                this["CodeGenProjectType"] = value;
-            }
-        }
-        
-        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Configuration.ApplicationScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("False")]
         public bool CodeGenUseForeignKeyIdProperties {
             get {
                 return ((bool)(this["CodeGenUseForeignKeyIdProperties"]));
             }
-            set {
-                this["CodeGenUseForeignKeyIdProperties"] = value;
-            }
         }
         
-        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Configuration.ApplicationScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("True")]
         public bool CodeGenUsePluralizingNamer {
             get {
                 return ((bool)(this["CodeGenUsePluralizingNamer"]));
             }
-            set {
-                this["CodeGenUsePluralizingNamer"] = value;
-            }
         }
         
-        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Configuration.ApplicationScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("False")]
         public bool CodeGenWriteUnitTest {
             get {
                 return ((bool)(this["CodeGenWriteUnitTest"]));
             }
-            set {
-                this["CodeGenWriteUnitTest"] = value;
-            }
         }
         
-        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Configuration.ApplicationScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("True")]
         public bool CodeGenWriteProjectFile {
             get {
                 return ((bool)(this["CodeGenWriteProjectFile"]));
             }
-            set {
-                this["CodeGenWriteProjectFile"] = value;
-            }
         }
         
-        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Configuration.ApplicationScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("False")]
         public bool CodeGenIncludeViews {
             get {
                 return ((bool)(this["CodeGenIncludeViews"]));
             }
-            set {
-                this["CodeGenIncludeViews"] = value;
-            }
         }
         
-        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Configuration.ApplicationScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("False")]
         public bool CodeGenWriteIndexAttribute {
             get {
                 return ((bool)(this["CodeGenWriteIndexAttribute"]));
             }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("E:\\Dev\\GraphQL\\dBSchemaReaderPoco.NetGen\\Playground")]
+        public string CodeGenFilePath {
+            get {
+                return ((string)(this["CodeGenFilePath"]));
+            }
             set {
-                this["CodeGenWriteIndexAttribute"] = value;
+                this["CodeGenFilePath"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("6")]
+        public int CodeGenProjectType {
+            get {
+                return ((int)(this["CodeGenProjectType"]));
+            }
+            set {
+                this["CodeGenProjectType"] = value;
             }
         }
     }
