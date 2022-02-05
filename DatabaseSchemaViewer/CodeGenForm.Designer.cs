@@ -32,6 +32,7 @@
             this.label1 = new System.Windows.Forms.Label();
             this.labExplanation = new System.Windows.Forms.Label();
             this.errorProvider1 = new System.Windows.Forms.ErrorProvider(this.components);
+            this.txtFilePath = new System.Windows.Forms.TextBox();
             this.statusStrip1 = new System.Windows.Forms.StatusStrip();
             this.toolStripStatusLabel1 = new System.Windows.Forms.ToolStripStatusLabel();
             this.btnFolderPicker = new System.Windows.Forms.Button();
@@ -53,7 +54,7 @@
             this.cmbProjectType = new System.Windows.Forms.ComboBox();
             this.chkReadSprocs = new System.Windows.Forms.CheckBox();
             this.txtNamespace = new System.Windows.Forms.TextBox();
-            this.txtFilePath = new System.Windows.Forms.TextBox();
+            this.btnValidate = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.errorProvider1)).BeginInit();
             this.statusStrip1.SuspendLayout();
             this.panelTables.SuspendLayout();
@@ -81,6 +82,19 @@
             // errorProvider1
             // 
             this.errorProvider1.ContainerControl = this;
+            // 
+            // txtFilePath
+            // 
+            this.txtFilePath.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.txtFilePath.DataBindings.Add(new System.Windows.Forms.Binding("Text", global::DatabaseSchemaViewer.Properties.Settings.Default, "CodeGenFilePath", true, System.Windows.Forms.DataSourceUpdateMode.OnPropertyChanged));
+            this.errorProvider1.SetError(this.txtFilePath, "Invalid path");
+            this.txtFilePath.Location = new System.Drawing.Point(83, 32);
+            this.txtFilePath.Name = "txtFilePath";
+            this.txtFilePath.Size = new System.Drawing.Size(354, 20);
+            this.txtFilePath.TabIndex = 2;
+            this.txtFilePath.Text = global::DatabaseSchemaViewer.Properties.Settings.Default.CodeGenFilePath;
+            this.txtFilePath.Validating += new System.ComponentModel.CancelEventHandler(this.FilePathValidating);
             // 
             // statusStrip1
             // 
@@ -137,9 +151,9 @@
             // 
             // btnGenerate
             // 
-            this.btnGenerate.Location = new System.Drawing.Point(83, 205);
+            this.btnGenerate.Location = new System.Drawing.Point(269, 200);
             this.btnGenerate.Name = "btnGenerate";
-            this.btnGenerate.Size = new System.Drawing.Size(75, 23);
+            this.btnGenerate.Size = new System.Drawing.Size(99, 36);
             this.btnGenerate.TabIndex = 15;
             this.btnGenerate.Text = "Generate";
             this.btnGenerate.UseVisualStyleBackColor = true;
@@ -147,11 +161,11 @@
             // 
             // progressBar1
             // 
-            this.progressBar1.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
-                        | System.Windows.Forms.AnchorStyles.Right)));
-            this.progressBar1.Location = new System.Drawing.Point(83, 205);
+            this.progressBar1.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.progressBar1.Location = new System.Drawing.Point(83, 199);
             this.progressBar1.Name = "progressBar1";
-            this.progressBar1.Size = new System.Drawing.Size(354, 23);
+            this.progressBar1.Size = new System.Drawing.Size(354, 37);
             this.progressBar1.Style = System.Windows.Forms.ProgressBarStyle.Marquee;
             this.progressBar1.TabIndex = 16;
             this.progressBar1.Visible = false;
@@ -193,8 +207,8 @@
             // 
             // panelTables
             // 
-            this.panelTables.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
-                        | System.Windows.Forms.AnchorStyles.Right)));
+            this.panelTables.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
             this.panelTables.Controls.Add(this.cmbTables);
             this.panelTables.Controls.Add(this.label2);
             this.panelTables.Location = new System.Drawing.Point(13, 150);
@@ -204,8 +218,8 @@
             // 
             // cmbTables
             // 
-            this.cmbTables.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
-                        | System.Windows.Forms.AnchorStyles.Right)));
+            this.cmbTables.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
             this.cmbTables.FormattingEnabled = true;
             this.cmbTables.Location = new System.Drawing.Point(71, 9);
             this.cmbTables.Name = "cmbTables";
@@ -239,8 +253,8 @@
             // 
             // panelCodeGen
             // 
-            this.panelCodeGen.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
-                        | System.Windows.Forms.AnchorStyles.Right)));
+            this.panelCodeGen.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
             this.panelCodeGen.Controls.Add(this.labProjectType);
             this.panelCodeGen.Controls.Add(this.cmbProjectType);
             this.panelCodeGen.Controls.Add(this.chkReadSprocs);
@@ -271,6 +285,7 @@
             // 
             this.chkReadSprocs.AutoSize = true;
             this.chkReadSprocs.Checked = global::DatabaseSchemaViewer.Properties.Settings.Default.CodeGenReadProcedures;
+            this.chkReadSprocs.CheckState = System.Windows.Forms.CheckState.Checked;
             this.chkReadSprocs.DataBindings.Add(new System.Windows.Forms.Binding("Checked", global::DatabaseSchemaViewer.Properties.Settings.Default, "CodeGenReadProcedures", true, System.Windows.Forms.DataSourceUpdateMode.OnPropertyChanged));
             this.chkReadSprocs.Location = new System.Drawing.Point(71, 8);
             this.chkReadSprocs.Name = "chkReadSprocs";
@@ -282,8 +297,8 @@
             // 
             // txtNamespace
             // 
-            this.txtNamespace.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
-                        | System.Windows.Forms.AnchorStyles.Right)));
+            this.txtNamespace.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
             this.txtNamespace.DataBindings.Add(new System.Windows.Forms.Binding("Text", global::DatabaseSchemaViewer.Properties.Settings.Default, "CodeGenNamespace", true, System.Windows.Forms.DataSourceUpdateMode.OnPropertyChanged));
             this.txtNamespace.Location = new System.Drawing.Point(83, 97);
             this.txtNamespace.Name = "txtNamespace";
@@ -292,24 +307,22 @@
             this.txtNamespace.Text = global::DatabaseSchemaViewer.Properties.Settings.Default.CodeGenNamespace;
             this.txtNamespace.Validating += new System.ComponentModel.CancelEventHandler(this.NamespaceValidating);
             // 
-            // txtFilePath
+            // btnValidate
             // 
-            this.txtFilePath.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
-                        | System.Windows.Forms.AnchorStyles.Right)));
-            this.txtFilePath.DataBindings.Add(new System.Windows.Forms.Binding("Text", global::DatabaseSchemaViewer.Properties.Settings.Default, "CodeGenFilePath", true, System.Windows.Forms.DataSourceUpdateMode.OnPropertyChanged));
-            this.errorProvider1.SetError(this.txtFilePath, "Invalid path");
-            this.txtFilePath.Location = new System.Drawing.Point(83, 32);
-            this.txtFilePath.Name = "txtFilePath";
-            this.txtFilePath.Size = new System.Drawing.Size(354, 20);
-            this.txtFilePath.TabIndex = 2;
-            this.txtFilePath.Text = global::DatabaseSchemaViewer.Properties.Settings.Default.CodeGenFilePath;
-            this.txtFilePath.Validating += new System.ComponentModel.CancelEventHandler(this.FilePathValidating);
+            this.btnValidate.Location = new System.Drawing.Point(84, 199);
+            this.btnValidate.Name = "btnValidate";
+            this.btnValidate.Size = new System.Drawing.Size(165, 36);
+            this.btnValidate.TabIndex = 19;
+            this.btnValidate.Text = "Validate Schema for GraphQL";
+            this.btnValidate.UseVisualStyleBackColor = true;
+            this.btnValidate.Click += new System.EventHandler(this.btnValidate_Click);
             // 
             // CodeGenForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(498, 266);
+            this.Controls.Add(this.btnValidate);
             this.Controls.Add(this.panelCodeGen);
             this.Controls.Add(this.radData);
             this.Controls.Add(this.panelTables);
@@ -329,8 +342,8 @@
             this.Controls.Add(this.label1);
             this.Name = "CodeGenForm";
             this.Text = "Code Generation";
-            this.Load += new System.EventHandler(this.CodeGenFormLoad);
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.CodeGenFormFormClosing);
+            this.Load += new System.EventHandler(this.CodeGenFormLoad);
             ((System.ComponentModel.ISupportInitialize)(this.errorProvider1)).EndInit();
             this.statusStrip1.ResumeLayout(false);
             this.statusStrip1.PerformLayout();
@@ -370,5 +383,6 @@
         private System.Windows.Forms.CheckBox chkReadSprocs;
         private System.Windows.Forms.Label labProjectType;
         private System.Windows.Forms.ComboBox cmbProjectType;
+        private System.Windows.Forms.Button btnValidate;
     }
 }

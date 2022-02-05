@@ -71,12 +71,13 @@ namespace DatabaseSchemaReader.CodeGen
                 throw new InvalidOperationException("Directory does not exist: " + directory.FullName);
 
 
-            List<DatabaseConstraint> foreignKeyReverseGetLookUps = new List<DatabaseConstraint>();            
-            StringBuilder sbDbContext = new StringBuilder();
+            List<DatabaseConstraint> foreignKeyReverseGetLookUps = new List<DatabaseConstraint>();
+            List<DatabaseConstraint> singleTableKeyResolverLookUps = new List<DatabaseConstraint>();
+        StringBuilder sbDbContext = new StringBuilder();
             StringBuilder sbMutations = new StringBuilder();
             StringBuilder sbQueries = new StringBuilder();
             StringBuilder sbSubscriptions = new StringBuilder();
-            
+
             var pw = CreateProjectWriter();
 
             InitMappingProjects(directory, pw);
@@ -95,10 +96,23 @@ namespace DatabaseSchemaReader.CodeGen
                 {
                     foreach (var foreignKeyChild in table.ForeignKeyChildren)
                     {
-                        if ( table.IsSharedPrimaryKey(foreignKeyChild)) continue;
+                        if (table.IsSharedPrimaryKey(foreignKeyChild)) continue;
                         foreignKeyReverseGetLookUps.Add(new DatabaseConstraint { TableName = foreignKeyChild.Name, RefersToTable = table.Name, RefersToConstraint = foreignKeyChild.PrimaryKeyColumn.Name });
                     }
+
+                    //TO DO Combine these two ForeignKey lookups (above & below)into a single loop
+                    foreach (var fKey in table.ForeignKeys)
+                    {
+                        string fKeyTableName = NameFixer.MakeSingular(fKey.RefersToTable);
+                        // When we encounter a foreign key column that doesn't map directly (it could refer to a Single Table), then there could be multiple of these columns so we need to remove ambiguity:
+                        if (NameFixer.RemoveId(fKey.Columns[0]) != fKeyTableName && fKey.Columns[0].Contains("Id"))
+                        {
+                            if (singleTableKeyResolverLookUps.Contains(fKey)) continue;
+                            singleTableKeyResolverLookUps.Add(fKey);
+                        }
+                    }
                 }
+
 
                 sbDbContext.Append(GraphQLdBContext.GetGraphGLUsingStatements(_codeWriterSettings));
                 sbDbContext.Append(GraphQLdBContext.BeginClass());
@@ -113,7 +127,7 @@ namespace DatabaseSchemaReader.CodeGen
                 sbSubscriptions.Append(GraphQLSubscription.BeginClass());
             }
 
-                
+
             foreach (var table in tables) //_schema.Tables)
             {
                 //if (FilterIneligible(table)) continue;
@@ -123,10 +137,10 @@ namespace DatabaseSchemaReader.CodeGen
                 var cw = new ClassWriter(table, _codeWriterSettings);
                 var txt = cw.Write();
 
-                var fileName = WriteClassFile(new DirectoryInfo(directory.FullName +"\\Models"), className, txt);
+                var fileName = WriteClassFile(new DirectoryInfo(directory.FullName + "\\Models"), className, txt);
                 pw.AddClass(fileName);
 
-                WriteMapping(table, pw, foreignKeyReverseGetLookUps);
+                WriteMapping(table, pw, foreignKeyReverseGetLookUps, singleTableKeyResolverLookUps);
 
                 if (_codeWriterSettings.CodeTarget == CodeTarget.PocoGraphGL)
                 {
@@ -150,14 +164,14 @@ namespace DatabaseSchemaReader.CodeGen
                     var fileName = WriteClassFile(directory, className, txt);
                     pw.AddClass(fileName);
 
-                    WriteMapping(view, pw, null);
+                    WriteMapping(view, pw, null, null);
                 }
             }
 
 
             string contextName = null;
             if (IsCodeFirst() && _codeWriterSettings.CodeTarget != CodeTarget.PocoGraphGL) contextName = WriteDbContext(directory, pw);
-            
+
 
             //we could write functions (at least scalar functions- not table value functions)
             //you have to check the ReturnType (and remove it from the arguments collections).
@@ -175,9 +189,11 @@ namespace DatabaseSchemaReader.CodeGen
                 sbSubscriptions.Append(GraphQLSubscription.EndClass());
 
                 sbDbContext.Append(GraphQLdBContext.BeginReferentialIntegrity());
-                foreach (var fkeyRel in foreignKeyReverseGetLookUps)
+                foreach (var lookup in foreignKeyReverseGetLookUps)
                 {
-                    sbDbContext.Append(GraphQLdBContext.AddDBReferentialIntegrity(fkeyRel));
+                    // A SingleTable at this stage/current can't have reverse lookups 
+                    if (singleTableKeyResolverLookUps.Any(a => a.RefersToTable == lookup.RefersToTable)) continue;
+                    sbDbContext.Append(GraphQLdBContext.AddDBReferentialIntegrity(lookup));
                 }
                 sbDbContext.AppendLine(GraphQLdBContext.EndReferentialIntegrity());
                 sbDbContext.Append(GraphQLdBContext.EndClass());
@@ -338,7 +354,7 @@ namespace DatabaseSchemaReader.CodeGen
                 xml);
         }
 
-        private void WriteMapping(DatabaseTable table, ProjectWriter pw, List<DatabaseConstraint> foreignKeyReverseGetLookUps)
+        private void WriteMapping(DatabaseTable table, ProjectWriter pw, List<DatabaseConstraint> foreignKeyReverseGetLookUps, List<DatabaseConstraint> singleTableKeyResolverLookUps)
         {
             string fileName;
             switch (_codeWriterSettings.CodeTarget)
@@ -371,7 +387,7 @@ namespace DatabaseSchemaReader.CodeGen
                     pw.AddClass(@"Mapping\" + fileName);
                     break;
                 case CodeTarget.PocoGraphGL:
-                    fileName = WriteGraphQLMapping(table, foreignKeyReverseGetLookUps);
+                    fileName = WriteGraphQLMapping(table, foreignKeyReverseGetLookUps, singleTableKeyResolverLookUps);
                     pw.AddClass(@"Mapping\" + fileName);
                     break;
             }
@@ -387,9 +403,9 @@ namespace DatabaseSchemaReader.CodeGen
             return fileName;
         }
 
-        private string WriteGraphQLMapping(DatabaseTable table, List<DatabaseConstraint> foreignKeyReverseGetLookUps)
+        private string WriteGraphQLMapping(DatabaseTable table, List<DatabaseConstraint> foreignKeyReverseGetLookUps, List<DatabaseConstraint> _singleTableKeyResolverLookUps)
         {
-            var graphQLMapping = new GraphGLMappingWriter(table, _codeWriterSettings, _mappingNamer, foreignKeyReverseGetLookUps);
+            var graphQLMapping = new GraphGLMappingWriter(table, _codeWriterSettings, _mappingNamer, foreignKeyReverseGetLookUps, _singleTableKeyResolverLookUps);
             var txt = graphQLMapping.Write();
             var fileName = graphQLMapping.MappingClassName + ".cs";
             var path = Path.Combine(_mappingPath, fileName);

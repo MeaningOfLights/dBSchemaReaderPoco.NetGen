@@ -25,7 +25,7 @@ namespace DatabaseSchemaViewer.Properties {
         
         [global::System.Configuration.ApplicationScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("dbo")]
+        [global::System.Configuration.DefaultSettingValueAttribute("public")]
         public string SchemaOwner {
             get {
                 return ((string)(this["SchemaOwner"]));
@@ -43,7 +43,7 @@ namespace DatabaseSchemaViewer.Properties {
         
         [global::System.Configuration.ApplicationScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("Domain")]
+        [global::System.Configuration.DefaultSettingValueAttribute("AB.Net")]
         public string CodeGenNamespace {
             get {
                 return ((string)(this["CodeGenNamespace"]));

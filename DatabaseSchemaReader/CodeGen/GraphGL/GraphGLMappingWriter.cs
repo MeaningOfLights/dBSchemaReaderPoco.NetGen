@@ -15,16 +15,18 @@ namespace DatabaseSchemaReader.CodeGen.GraphGL
         private readonly ClassBuilder _cb;
         private DatabaseTable _inheritanceTable;
         private List<DatabaseConstraint> _foreignKeyResolverLookUps;
+        private List<DatabaseConstraint> _singleTableKeyResolverLookUps;
 
-        public GraphGLMappingWriter(DatabaseTable table, CodeWriterSettings codeWriterSettings, MappingNamer mappingNamer, List<DatabaseConstraint> foreignKeyResolverLookUps)
+        public GraphGLMappingWriter(DatabaseTable table, CodeWriterSettings codeWriterSettings, MappingNamer mappingNamer, List<DatabaseConstraint> foreignKeyResolverLookUps, List<DatabaseConstraint> singleTableKeyResolverLookUps)
         {
             if (table == null) throw new ArgumentNullException("table");
             if (mappingNamer == null) throw new ArgumentNullException("mappingNamer");
 
+            _table = table;
             _codeWriterSettings = codeWriterSettings;
             _mappingNamer = mappingNamer;
             _foreignKeyResolverLookUps = foreignKeyResolverLookUps;
-            _table = table;
+            _singleTableKeyResolverLookUps = singleTableKeyResolverLookUps;
             _cb = new ClassBuilder();
         }
 
@@ -104,16 +106,39 @@ namespace DatabaseSchemaReader.CodeGen.GraphGL
                 sb.Append(" => ");
                 sb.Append(letter);
                 sb.Append(".");
-                sb.Append(fKeyTableName);
-                sb.Append(")");
-                sb.Append(".ResolveWith<Resolvers>(");
-                sb.Append(letter);
-                sb.Append(" => ");
-                sb.Append(letter);
-                sb.Append(".Get");
-                sb.Append(fKeyTableName);
+
+                // When we encounter a foreign key column that doesn't map directly (it could refer to a Single Table), then there could be multiple of these columns so we need to remove ambiguity:
+                if (NameFixer.RemoveId(fKey.Columns[0]) != fKeyTableName && fKey.Columns[0].Contains("Id"))
+                {
+                    sb.Append(NameFixer.RemoveId(fKey.Columns[0]));
+                    sb.Append(")");
+                    sb.Append(".ResolveWith<Resolvers>(");
+                    sb.Append(letter);
+                    sb.Append(" => ");
+                    sb.Append(letter);
+                    sb.Append(".Get");
+                    sb.Append(fKeyTableName);
+                    sb.Append(".By");
+                    sb.Append(fKey.Columns[0]);
+
+                    if (_singleTableKeyResolverLookUps.Contains(fKey)) continue;
+                    _singleTableKeyResolverLookUps.Add(fKey);
+                }
+                else
+                {
+                    sb.Append(fKeyTableName);
+                    sb.Append(")");
+                    sb.Append(".ResolveWith<Resolvers>(");
+                    sb.Append(letter);
+                    sb.Append(" => ");
+                    sb.Append(letter);
+                    sb.Append(".Get");
+                    sb.Append(fKeyTableName);
+                }
+
                 sb.Append("(default!, default!)).UseDbContext<AppDbContext>()");
                 sb.Append(@".Description(""This is the " + fKeyTableName + " to which the " + _table.NetName + @" relates."");");
+
                 _cb.AppendLine(sb.ToString());
             }
         }
@@ -128,16 +153,52 @@ namespace DatabaseSchemaReader.CodeGen.GraphGL
                 //{
                 //    return context.Commands.Where(p => p.PlatformId == platform.Id);
                 //}
+                string refersToTable = String.Empty;
+                string table = string.Empty;
+                char letter = _table.NetName[0];
+
+                // When we encounter a foreign key column that doesn't map directly to another table (it could refer to a Single Table), 
+                // then there could be more than one and we need to add multiple resolvers for each of the lookups
+                var singleTableResolvers = _singleTableKeyResolverLookUps.Where(a => a.RefersToTable == _table.Name);
+                if (singleTableResolvers.Count() > 0)
+                {
+                    foreach (var resolver in singleTableResolvers)
+                    {
+                        refersToTable = NameFixer.MakeSingular(resolver.TableName);
+                        table = NameFixer.MakeSingular(_table.Name);
+                        using (_cb.BeginNest("public IQueryable<" + refersToTable + "> Get" + resolver.TableName + "By" + resolver.Columns[0] + "(" + table + " " + NameFixer.ToCamelCase(table) + ", [ScopedService] AppDbContext context)"))
+                        {
+                            StringBuilder sb = new StringBuilder();
+                            sb.Append("return context.");
+                            sb.Append(resolver.TableName);
+                            sb.Append(".Where(");
+                            sb.Append(letter);
+                            sb.Append(" => ");
+                            sb.Append(letter);
+                            sb.Append(".");
+                            sb.Append(resolver.Columns[0]);
+                            sb.Append(" == ");
+                            sb.Append(NameFixer.ToCamelCase(table));
+                            sb.Append(".");
+                            sb.Append(_table.PrimaryKey.Columns[0]); //This equals what the resolver.RefersToConstraint points to.
+                            sb.Append(");");
+                            _cb.AppendLine(sb.ToString());
+                        }
+                    }
+                }
 
                 var reverseLookUps = _foreignKeyResolverLookUps.Where(s => s.RefersToTable == _table.Name);
                 foreach (var lookup in reverseLookUps)
                 {
-                    string reverseTable = NameFixer.MakeSingular(lookup.TableName);
-                    string table = NameFixer.MakeSingular(lookup.RefersToTable);
-                    using (_cb.BeginNest("public IQueryable<" + reverseTable + "> Get" + lookup.TableName + "(" + table + " " + NameFixer.ToCamelCase(table) + ", [ScopedService] AppDbContext context)"))
+                    // A SingleTable may have foreign keys explicitly added above
+                    if (singleTableResolvers.Any(a => a.RefersToTable == lookup.RefersToTable)) continue;
+
+                    StringBuilder sb = new StringBuilder();
+
+                    refersToTable = NameFixer.MakeSingular(lookup.TableName);
+                    table = NameFixer.MakeSingular(lookup.RefersToTable);
+                    using (_cb.BeginNest("public IQueryable<" + refersToTable + "> Get" + lookup.TableName + "(" + table + " " + NameFixer.ToCamelCase(table) + ", [ScopedService] AppDbContext context)"))
                     {
-                        char letter = table[0];
-                        StringBuilder sb = new StringBuilder();
                         sb.Append("return context.");
                         sb.Append(lookup.TableName);
                         sb.Append(".Where(");
@@ -151,23 +212,35 @@ namespace DatabaseSchemaReader.CodeGen.GraphGL
                         sb.Append(NameFixer.ToCamelCase(table));
                         sb.Append(".");
                         sb.Append(lookup.RefersToConstraint);
-                        sb.AppendLine(");");
-
+                        sb.Append(");");
                         _cb.AppendLine(sb.ToString());
                     }
-
                 }
+               
 
-                foreach (var fKey in _table.ForeignKeys)
+                foreach (var fKey in _table.ForeignKeys.Distinct())
                 {
                     if (Equals(fKey.ReferencedTable(_table.DatabaseSchema), _inheritanceTable))
                         continue;
 
                     string fKeyTableName = NameFixer.MakeSingular(fKey.RefersToTable);
-
-                    using (_cb.BeginNest("public " + fKeyTableName + " Get" + fKeyTableName + "(" + _table.NetName + " " + tableNamePascalCase + ", [ScopedService] AppDbContext context)", "Resolvers"))
+                    // When we encounter a foreign key column that doesn't map directly (it could refer to a Single Table), then there could be multiple of these columns so we need to remove ambiguity:
+                    if (NameFixer.RemoveId(fKey.Columns[0]) != fKeyTableName && fKey.Columns[0].Contains("Id"))
                     {
-                        _cb.AppendLine(" return context." + fKey.RefersToTable + ".FirstOrDefault(p => p.Id == " + tableNamePascalCase + "." + fKey.Columns[0] + ");");
+                        //GetSOMETHINGBySOMETHINGSettingId
+                        using (_cb.BeginNest("public " + fKeyTableName + " Get" + fKeyTableName + "By" + fKey.Columns[0] + "(" + _table.NetName + " " + tableNamePascalCase + ", [ScopedService] AppDbContext context)", "Resolvers"))
+                        {
+                            _cb.AppendLine(" return context." + fKey.RefersToTable + ".FirstOrDefault(p => p.Id == " + tableNamePascalCase + "." + fKey.Columns[0] + ");");
+                        }
+                    }
+
+                    else
+                    {
+                        using (_cb.BeginNest("public " + fKeyTableName + " Get" + fKeyTableName + "(" + _table.NetName + " " + tableNamePascalCase + ", [ScopedService] AppDbContext context)", "Resolvers"))
+                        {
+                       
+                            _cb.AppendLine(" return context." + fKey.RefersToTable + ".FirstOrDefault(p => p.Id == " + tableNamePascalCase + "." + fKey.Columns[0] + ");");
+                        }
                     }
                 }
             }
@@ -223,7 +296,7 @@ namespace DatabaseSchemaReader.CodeGen.GraphGL
         {
             //string howTo, string commandLine, 
             StringBuilder sb = new StringBuilder();
-            DataTypeWriter dataTypeWriter = new DataTypeWriter();
+            DataTypeWriter dataTypeWriter = new DataTypeWriter(CodeTarget.PocoGraphGL);
             foreach (var column in _table.Columns)
             {
                 if (column.IsPrimaryKey) continue;
@@ -300,280 +373,6 @@ namespace DatabaseSchemaReader.CodeGen.GraphGL
             sb.Append(")");
             sb.AppendLine(@".Description(""Represents the added " + _table.NetName + @"."");");
             _cb.AppendLine(sb.ToString());            
-        }
-
-        
-        private void AddPrimaryKey()
-        {
-            if (_table.PrimaryKey == null || _table.PrimaryKey.Columns.Count == 0)
-            {
-                if (_table is DatabaseView)
-                {
-                    AddCompositePrimaryKeyForView();
-                    return;
-                }
-                _cb.AppendLine("//TODO- you MUST add a primary key!");
-                return;
-            }
-            if (_table.HasCompositeKey)
-            {
-                AddCompositePrimaryKey();
-                return;
-            }
-
-            var idColumn = _table.PrimaryKeyColumn;
-
-            if (_inheritanceTable != null)
-            {
-                _cb.AppendLine("KeyColumn(\"" + idColumn.Name + "\");");
-                return;
-            }
-
-            var sb = new StringBuilder();
-            sb.AppendFormat(CultureInfo.InvariantCulture, "Id(x => x.{0})", idColumn.NetName);
-            if (idColumn.Name != idColumn.NetName)
-            {
-                sb.AppendFormat(CultureInfo.InvariantCulture, ".Column(\"{0}\")", idColumn.Name);
-            }
-            if (idColumn.IsAutoNumber)
-            {
-                sb.AppendFormat(CultureInfo.InvariantCulture, ".GeneratedBy.Identity()");
-                //other GeneratedBy values (Guid, Assigned) are left to defaults
-            }
-            //one to one with generator foreign
-            if (idColumn.IsForeignKey)
-            {
-                //primary key is also a foreign key
-                var fk = _table.ForeignKeys.FirstOrDefault(x => x.RefersToTable == idColumn.ForeignKeyTableName);
-                if (fk != null)
-                {
-                    var propertyName = _codeWriterSettings.Namer.ForeignKeyName(_table, fk);
-                    sb.AppendFormat(CultureInfo.InvariantCulture, ".GeneratedBy.Foreign(\"{0}\")", propertyName);
-                }
-            }
-
-            sb.Append(";");
-            _cb.AppendLine(sb.ToString());
-        }
-
-        private void AddCompositePrimaryKeyForView()
-        {
-            var sb = new StringBuilder();
-            sb.Append("CompositeId()");
-            //we map ALL columns as the key.
-            foreach (var column in _table.Columns)
-            {
-                sb.AppendFormat(CultureInfo.InvariantCulture,
-                                ".KeyProperty(x => x.{0}, \"{1}\")",
-                                column.NetName,
-                                column.Name);
-            }
-            sb.Append(";");
-            _cb.AppendLine(sb.ToString());
-            _cb.AppendLine("ReadOnly();");
-        }
-
-            private void AddCompositePrimaryKey()
-        {
-            if (_inheritanceTable != null)
-            {
-                foreach (var col in _table.PrimaryKey.Columns)
-                {
-                    _cb.AppendLine("KeyColumn(\"" + col + "\");");
-                }
-                return;
-            }
-
-            var sb = new StringBuilder();
-            //our convention is always to generate a key class with property name Key
-            sb.Append("CompositeId(x => x.Key)");
-
-            // KL: Ensuring composite primary key is generated in order of define key and not
-            // simply the order of the tables.
-            foreach (var col in _table.PrimaryKey.Columns)
-            {
-                DatabaseColumn column = _table.FindColumn(col);
-
-                const string keyType = "KeyProperty";
-                var name = _codeWriterSettings.Namer.PrimaryKeyName(column);
-                // KL: Mapping the foreign keys separately. KeyReference was causing issues.
-                //var keyType = "KeyReference";
-                //if (column.ForeignKeyTable == null)
-                //{
-                //    keyType = "KeyProperty";
-                //}
-                sb.AppendFormat(CultureInfo.InvariantCulture,
-                                                ".{0}(x => x.{1}, \"{2}\")",
-                                                keyType,
-                                                name,
-                                                column.Name);
-            }
-            sb.Append(";");
-            _cb.AppendLine(sb.ToString());
-        }
-
-
-        private void WriteColumns()
-        {
-            //map the columns
-            // KL: Only write empty columns. Then, foreign keys.
-            foreach (var column in _table.Columns.Where(c => !c.IsPrimaryKey && !c.IsForeignKey))
-            {
-                WriteColumn(column);
-            }
-
-            // KL: Writing foreign key separately
-            foreach (var fKey in _table.ForeignKeys)
-            {
-                if (Equals(fKey.ReferencedTable(_table.DatabaseSchema), _inheritanceTable))
-                    continue;
-
-                WriteForeignKey(fKey);
-            }
-        }
-
-
-        private void WriteColumn(DatabaseColumn column)
-        {
-            //if (column.IsForeignKey)
-            //{
-            //    // KL: Needed to write foreign keys in their own step in order to support composite
-            //    //WriteForeignKey(column);
-            //    return;
-            //}
-
-            var propertyName = column.NetName;
-            var sb = new StringBuilder();
-            sb.AppendFormat(CultureInfo.InvariantCulture, "Map(x => x.{0})", propertyName);
-            if (propertyName != column.Name)
-            {
-                sb.AppendFormat(CultureInfo.InvariantCulture, ".Column(\"{0}\")", column.Name);
-            }
-
-            if (column.IsComputed)
-            {
-                sb.Append(".ReadOnly().Generated.Always()");
-            }
-            else
-            {
-
-                var dt = column.DataType;
-                if (dt != null)
-                {
-                    //nvarchar(max) may be -1
-                    if (dt.IsString && column.Length > 0 && column.Length < 1073741823)
-                    {
-                        sb.AppendFormat(CultureInfo.InvariantCulture, ".Length({0})", column.Length.GetValueOrDefault());
-                    }
-                }
-
-                if (!column.Nullable)
-                {
-                    sb.Append(".Not.Nullable()");
-                }
-            }
-
-            sb.Append(";");
-            _cb.AppendLine(sb.ToString());
-        }
-
-        //private void WriteForeignKey(DatabaseColumn column)
-        //{
-        //    var propertyName = column.NetName;
-        //    var sb = new StringBuilder();
-        //    sb.AppendFormat(CultureInfo.InvariantCulture, "References(x => x.{0})", propertyName);
-        //    sb.AppendFormat(CultureInfo.InvariantCulture, ".Column(\"{0}\")", column.Name);
-        //    //bad idea unless you expect the database to be inconsistent
-        //    //sb.Append(".NotFound.Ignore()");
-        //    //could look up cascade rule here
-        //    sb.Append(";");
-        //    _cb.AppendLine(sb.ToString());
-        //}
-
-        /// <summary>
-        /// KL: Writes the foreign key an also supports composite foreign keys.
-        /// </summary>
-        /// <param name="foreignKey">The foreign key.</param>
-        private void WriteForeignKey(DatabaseConstraint foreignKey)
-        {
-            var propertyName = _codeWriterSettings.Namer.ForeignKeyName(_table, foreignKey);
-            if (string.IsNullOrEmpty(propertyName)) return;
-
-            var isPrimaryKey = false;
-            if (_table.PrimaryKey != null)
-            {
-                //the primary key is also this foreign key
-                isPrimaryKey = _table.PrimaryKey.Columns.SequenceEqual(foreignKey.Columns);
-            }
-            //1:1 shared primary key 
-            if (isPrimaryKey)
-            {
-                _cb.AppendFormat("HasOne(x => x.{0}).ForeignKey(\"{1}\");",
-                    propertyName, foreignKey.Name);
-                return;
-            }
-
-            var cols = foreignKey.Columns.Select(x => string.Format("\"{0}\"", x)).ToArray();
-
-            var sb = new StringBuilder();
-            sb.AppendFormat(CultureInfo.InvariantCulture, "References(x => x.{0})", propertyName);
-            if (cols.Length > 1)
-            {
-                sb.AppendFormat(CultureInfo.InvariantCulture, ".Columns(new string[] {{ {0} }});", String.Join(", ", cols));
-            }
-            else
-            {
-                sb.AppendFormat(CultureInfo.InvariantCulture, ".Column(\"{0}\");", foreignKey.Columns.FirstOrDefault());
-            }
-            _cb.AppendLine(sb.ToString());
-        }
-
-        private void WriteForeignKeyCollection(DatabaseTable foreignKeyChild)
-        {
-            var foreignKeyTable = foreignKeyChild.Name;
-            var childClass = foreignKeyChild.NetName;
-            var fks = _table.InverseForeignKeys(foreignKeyChild);
-            if (!fks.Any()) return; //corruption in our database
-
-            _cb.AppendFormat("//Foreign key to {0} ({1})", foreignKeyTable, childClass);
-            if (_table.IsSharedPrimaryKey(foreignKeyChild))
-            {
-                var fk = fks.First();
-                if (fk.Columns.Count == 1)
-                    _cb.AppendFormat("HasOne(x => x.{0}).Constrained();", childClass);
-                //_cb.AppendFormat("References(x => x.{0}).Column(\"{1}\").ForeignKey(\"{2}\");",
-                //      childClass, fkColumn, foreignKey.Name);
-                //TODO composite keys
-                return;
-            }
-
-            foreach (var fk in fks)
-            {
-                var sb = new StringBuilder();
-                var propertyName = _codeWriterSettings.Namer.ForeignKeyCollectionName(_table.Name, foreignKeyChild, fk);
-                var fkColumn = fk.Columns.FirstOrDefault();
-
-                sb.AppendFormat(CultureInfo.InvariantCulture, "HasMany(x => x.{0})", propertyName);
-                //defaults to x_id
-
-                // KL: Only use .KeyColumn() if the foreign key is not composite
-                if (fk.Columns.Count == 1)
-                {
-                    sb.AppendFormat(CultureInfo.InvariantCulture, ".KeyColumn(\"{0}\")", fkColumn);
-                }
-                // If composite key, generate .KeyColumns(...) with array of keys
-                else
-                {
-                    var cols = fk.Columns.Select(x => string.Format("\"{0}\"", x)).ToArray();
-                    sb.AppendFormat(CultureInfo.InvariantCulture, ".KeyColumns.Add(new string[] {{ {0} }})",
-                                    String.Join(", ", cols));
-                }
-                sb.Append(".Inverse()");
-                sb.AppendFormat(CultureInfo.InvariantCulture, ".ForeignKeyConstraintName(\"{0}\")", fk.Name);
-
-                sb.Append(";");
-                _cb.AppendLine(sb.ToString());
-            }
-        }
+        }        
     }
 }

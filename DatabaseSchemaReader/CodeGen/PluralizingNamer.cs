@@ -23,22 +23,27 @@ namespace DatabaseSchemaReader.CodeGen
             {
                 return className + "es"; //Addresses
             }
-            if (className.EndsWith("o", StringComparison.OrdinalIgnoreCase))
+            else if (className.EndsWith("o", StringComparison.OrdinalIgnoreCase))
             {
                 return className + "es"; //heroes, but not photos, kimonos
             }
-            if (className.EndsWith("x", StringComparison.OrdinalIgnoreCase))
+            else if (className.EndsWith("x", StringComparison.OrdinalIgnoreCase))
             {
                 return className + "es"; //Boxes
             }
-            if (className.EndsWith("y", StringComparison.OrdinalIgnoreCase))
+            else if (className.EndsWith("y", StringComparison.OrdinalIgnoreCase))
             {
                 return className.Substring(0, className.Length - 1) + "ies"; //Categories
             }
-            if (className.Equals("Person", StringComparison.OrdinalIgnoreCase))
+            else if (className.Equals("Person", StringComparison.OrdinalIgnoreCase))
             {
                 className = "People"; //add other irregulars.
             }
+            else if (className.Equals("Child", StringComparison.OrdinalIgnoreCase))
+            {
+                className = "Children"; //add other irregulars.
+            }
+
             //sorry for farming applications which will have sheeps
             return className + "s";
         }

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Text.RegularExpressions;
 
@@ -8,12 +9,24 @@ namespace DatabaseSchemaReader.CodeGen
     /// Fixes database names to be pascal case and singular.
     /// Consider replacing this with something a little more powerful- eg Castle Project inflector 
     /// https://github.com/castleproject/Castle.ActiveRecord/blob/master/src/Castle.ActiveRecord/Framework/Internal/Inflector.cs
+    /// Or https://alastaircrabtree.com/detecting-plurals-in-dot-net/
     /// </summary>
     public static class NameFixer
     {
 #if !COREFX
         private static readonly System.CodeDom.Compiler.CodeDomProvider CSharpProvider = System.CodeDom.Compiler.CodeDomProvider.CreateProvider("C#");
 #endif
+        public static string PrimaryKeyIdName => "Id";
+        public static string AppendId(string name)
+        {
+            name = RemoveId(name);
+            return name + PrimaryKeyIdName;
+        }
+        public static string RemoveId(string name)
+        {
+            if (name.EndsWith(PrimaryKeyIdName, StringComparison.OrdinalIgnoreCase)) name = name.Substring(0, name.Length - PrimaryKeyIdName.Length);
+            return name;
+        }
         /// <summary>
         /// Fixes the specified name to be pascal cased and (crudely) singular.
         /// </summary>
@@ -140,7 +153,57 @@ namespace DatabaseSchemaReader.CodeGen
             {
                 name = "Person"; //add other irregulars.
             }
+            else if (name.Equals("Children", StringComparison.OrdinalIgnoreCase))
+            {
+                name = "Child"; //add other irregulars.
+            }
             return name;
+        }
+
+
+
+        private static readonly Dictionary<string, string> KnownCommonPluralsDictionary = new Dictionary<string, string>
+        {
+            {"children", "child"},
+            {"people", "person"}
+        };
+
+        public static bool IsPlural(string plural)
+        {
+            plural = plural.ToLower();
+            // babies => baby
+            if (plural.EndsWith("ys"))
+                return true;
+
+            // catches => catch, axes => axis
+            if (plural.EndsWith("es"))
+                return true;
+
+            // people => person and other "one off" edge cases
+            if (KnownCommonPluralsDictionary.ContainsKey(plural))
+                return true;
+
+            //series => series
+            if (plural.EndsWith("ies"))
+                return true;
+
+            //statuses => status
+            if (plural.EndsWith("uses"))
+                return true;
+
+            //synopses => synopsis
+            if (plural.EndsWith("ses"))
+                return true;
+
+            //halves => half  (shelves, scarves, greaves, dwarves, sheaves, wharves, starves)
+            if (plural.EndsWith("ves"))
+                return true;
+
+            //vertices => vertex, matricies => matrix, indicies => index
+            if (plural.EndsWith("ices"))
+                return true;
+
+            return false;
         }
     }
 }

@@ -3,13 +3,13 @@
   <Profiles />
   <Settings>
     <Setting Name="SchemaOwner" Type="System.String" Scope="Application">
-      <Value Profile="(Default)">dbo</Value>
+      <Value Profile="(Default)">public</Value>
     </Setting>
     <Setting Name="ConnectionString" Type="System.String" Scope="Application">
       <Value Profile="(Default)">Server=.;Database=CommandsDBGraphql;Integrated Security=True;</Value>
     </Setting>
     <Setting Name="CodeGenNamespace" Type="System.String" Scope="Application">
-      <Value Profile="(Default)">Domain</Value>
+      <Value Profile="(Default)">AB.Net</Value>
     </Setting>
     <Setting Name="Provider" Type="System.String" Scope="User">
       <Value Profile="(Default)">System.Data.SqlClient</Value>

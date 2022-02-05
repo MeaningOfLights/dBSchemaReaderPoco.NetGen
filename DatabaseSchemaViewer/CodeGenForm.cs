@@ -3,6 +3,7 @@ using System.ComponentModel;
 using System.IO;
 using System.Text.RegularExpressions;
 using System.Windows.Forms;
+using DatabaseSchemaReader.CodeGen.GraphGL;
 using DatabaseSchemaReader.Conversion;
 using DatabaseSchemaReader.DataSchema;
 
@@ -46,7 +47,14 @@ namespace DatabaseSchemaViewer
                 cmbProjectType.SelectedIndex = Properties.Settings.Default.CodeGenProjectType;
             }
         }
-
+        private void btnValidate_Click(object sender, EventArgs e)
+        {
+            if (!ValidateChildren()) return;
+            string issues = GraphQLSchemaValidator.AllSchemaIssues(_databaseSchema);
+            var frm = new CodeGenValidatorForm();
+            frm.Controls[0].Text = issues;
+            frm.Show();
+        }
         private void GenerateClick(object sender, EventArgs e)
         {
             if (!ValidateChildren()) return;
@@ -301,5 +309,7 @@ namespace DatabaseSchemaViewer
             Properties.Settings.Default.CodeGenProjectType = cmbProjectType.SelectedIndex;
             Properties.Settings.Default.Save();
         }
+
+       
     }
 }

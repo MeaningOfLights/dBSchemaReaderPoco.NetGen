@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+﻿using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using DatabaseSchemaReader.CodeGen.CodeFirst;
 using DatabaseSchemaReader.DataSchema;
@@ -16,7 +17,6 @@ namespace DatabaseSchemaReader.CodeGen
         private DataAnnotationWriter _dataAnnotationWriter;
         private readonly CodeWriterSettings _codeWriterSettings;
         private DatabaseTable _inheritanceTable;
-        //private CodeInserter _codeInserter;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ClassWriter"/> class.
@@ -28,8 +28,6 @@ namespace DatabaseSchemaReader.CodeGen
             _codeWriterSettings = codeWriterSettings;
             _table = table;
             _cb = new ClassBuilder();
-            //_codeInserter = codeWriterSettings.CodeInserter;
-            //if (_codeInserter == null) _codeInserter = new CodeInserter();
         }
 
         /// <summary>
@@ -248,13 +246,15 @@ namespace DatabaseSchemaReader.CodeGen
                     _cb.AppendAutomaticProperty(foreignKey.NetName, foreignKey.NetName, useVirtual);
                     continue;
                 }
-
-                //the other table may have more than one fk pointing at this table
+                
                 var fks = _table.InverseForeignKeys(foreignKey);
                 foreach (var fk in fks)
                 {
                     var propertyName = _codeWriterSettings.Namer.ForeignKeyCollectionName(_table.Name, foreignKey, fk);
                     var dataType = listType + foreignKey.NetName + ">";
+                    //The foreign table may have more than one fk pointing at this table (or vice versa), so if the foreign table and column dont match then add the conflicting names together to give each property a unique name
+                    string namePluralized = _codeWriterSettings?.Namer?.NameCollection(NameFixer.MakeSingular(fk.TableName));
+                    propertyName = fk.TableName == propertyName || namePluralized == propertyName ? propertyName : NameFixer.MakeSingular(fk.TableName) + propertyName;
                     WriteForeignKeyChild(propertyName, dataType);
                 }
             }
@@ -318,6 +318,8 @@ namespace DatabaseSchemaReader.CodeGen
                     {
                         var propertyName = _codeWriterSettings.Namer.ForeignKeyCollectionName(_table.Name, foreignKey, fk);
                         var dataType = "List<" + foreignKey.NetName + ">";
+                        string namePluralized = _codeWriterSettings?.Namer?.NameCollection(NameFixer.MakeSingular(fk.TableName));
+                        propertyName = fk.TableName == propertyName || namePluralized == propertyName ? propertyName : NameFixer.MakeSingular(fk.TableName) + propertyName;
                         _cb.AppendLine(propertyName + " = new " + dataType + "();");
                     }
                 }
