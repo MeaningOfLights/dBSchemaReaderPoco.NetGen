@@ -1,6 +1,7 @@
 ﻿using DatabaseSchemaReader.DataSchema;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 namespace DatabaseSchemaReader.CodeGen.GraphGL
@@ -60,7 +61,7 @@ namespace DatabaseSchemaReader.CodeGen.GraphGL
         }
         public static string EndReferentialIntegrity() => "		}";
         
-        public static string AddDBReferentialIntegrity(DatabaseConstraint foreignKeyReverseGetLookUp)
+        public static string AddDBReferentialIntegrity(DatabaseConstraint foreignKeyReverseGetLookUp, List<DatabaseConstraint> singleTableKeyResolverLookUps)
         {
             StringBuilder sb = new StringBuilder();
 
@@ -75,19 +76,48 @@ namespace DatabaseSchemaReader.CodeGen.GraphGL
                 tablePlural = new PluralizingNamer().NameCollection(table);
             }
 
-            sb.AppendLine("");
-            sb.AppendLine("		    modelBuilder");
-            sb.AppendLine("		    .Entity<" + reftable + "> ()");
-            sb.AppendLine("		    .HasMany(p => p." + tablePlural + ")");
-            sb.AppendLine("		    .WithOne(p => p." + reftable + "!)");
-            sb.AppendLine("		    .HasForeignKey(p => p." + reftable + primaryKey + ");");
-            sb.AppendLine("");
-            sb.AppendLine("			modelBuilder");
-            sb.AppendLine("		    .Entity<" + table + "> ()");
-            sb.AppendLine("		    .HasOne(p => p." + reftable + ")");
-            sb.AppendLine("		    .WithMany(p => p." + tablePlural + ")");
-            sb.AppendLine("		    .HasForeignKey(p => p." + reftable + primaryKey + ");");
-            sb.AppendLine("");
+            // When we encounter a foreign key column that doesn't map to the 'Table-Id' convention,
+            // then there could be multiple of these columns so we need to name the methods uniquely from GetSomeThing to GetSomeThing-BySomeThingID:
+            if (singleTableKeyResolverLookUps.Any(a => a.RefersToTable == foreignKeyReverseGetLookUp.RefersToTable))
+            {
+                foreach(var lookup in singleTableKeyResolverLookUps)
+                {
+                    primaryKey = lookup.Columns[0];
+                    table = NameFixer.MakeSingular(lookup.TableName);
+                    string singleFKeyWithoutId = NameFixer.RemoveId(primaryKey);
+                    string singleFKey = table + new PluralizingNamer().NameCollection(singleFKeyWithoutId);
+                   
+                    sb.AppendLine("");
+                    sb.AppendLine("		    modelBuilder");
+                    sb.AppendLine("		    .Entity<" + reftable + ">()");
+                    sb.AppendLine("		    .HasMany(p => p." + singleFKey + ")");
+                    sb.AppendLine("		    .WithOne(p => p." + singleFKeyWithoutId + "!)");
+                    sb.AppendLine("		    .HasForeignKey(p => p." + primaryKey + ");");
+                    sb.AppendLine("");
+                    sb.AppendLine("			modelBuilder");
+                    sb.AppendLine("		    .Entity<" + table + ">()");
+                    sb.AppendLine("		    .HasOne(p => p." + singleFKeyWithoutId + ")");
+                    sb.AppendLine("		    .WithMany(p => p." + singleFKey + ")");
+                    sb.AppendLine("		    .HasForeignKey(p => p." + primaryKey + ");");
+                    sb.AppendLine("");
+                }
+            }
+            else
+            {
+                sb.AppendLine("");
+                sb.AppendLine("		    modelBuilder");
+                sb.AppendLine("		    .Entity<" + reftable + ">()");
+                sb.AppendLine("		    .HasMany(p => p." + tablePlural + ")");
+                sb.AppendLine("		    .WithOne(p => p." + reftable + "!)");
+                sb.AppendLine("		    .HasForeignKey(p => p." + reftable + primaryKey + ");");
+                sb.AppendLine("");
+                sb.AppendLine("			modelBuilder");
+                sb.AppendLine("		    .Entity<" + table + ">()");
+                sb.AppendLine("		    .HasOne(p => p." + reftable + ")");
+                sb.AppendLine("		    .WithMany(p => p." + tablePlural + ")");
+                sb.AppendLine("		    .HasForeignKey(p => p." + reftable + primaryKey + ");");
+                sb.AppendLine("");
+            }
             return sb.ToString();
         }
     }

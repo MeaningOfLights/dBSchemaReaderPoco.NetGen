@@ -187,9 +187,7 @@ namespace DatabaseSchemaReader.CodeGen
                 sbDbContext.Append(GraphQLdBContext.BeginReferentialIntegrity());
                 foreach (var lookup in foreignKeyReverseGetLookUps)
                 {
-                    // A SingleTable at this stage/current can't have reverse lookups 
-                    if (singleTableKeyResolverLookUps.Any(a => a.RefersToTable == lookup.RefersToTable)) continue;
-                    sbDbContext.Append(GraphQLdBContext.AddDBReferentialIntegrity(lookup));
+                    sbDbContext.Append(GraphQLdBContext.AddDBReferentialIntegrity(lookup, singleTableKeyResolverLookUps));
                 }
                 sbDbContext.AppendLine(GraphQLdBContext.EndReferentialIntegrity());
                 sbDbContext.Append(GraphQLdBContext.EndClass());

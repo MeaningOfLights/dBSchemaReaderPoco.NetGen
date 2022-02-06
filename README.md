@@ -34,8 +34,9 @@ CREDIT - GRAPHQL Poco.Net Gen:
 https://github.com/MeaningOfLights/dBSchemaReaderPoco.NetGen
 
 
-## History
+## History - GRAPHQL Poco.Net Gen
 
+1.06	Support for Singular Tables (Many-Columns-To-One-Table) and relationships
 1.05	Support got GraphQL attributes [UseProjections], [Parent] and Decimal Types with annotations 
 1.04	Support for Many-To-Many relationships
 1.03	Validation of Database Schema for GraphQL POCO Models
