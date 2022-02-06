@@ -1,4 +1,5 @@
-﻿using System;
+﻿using DatabaseSchemaReader.DataSchema;
+using System;
 
 namespace DatabaseSchemaReader.CodeGen
 {
@@ -19,6 +20,7 @@ namespace DatabaseSchemaReader.CodeGen
             var namer = new Namer();
             Namer = namer;
             CodeInserter = new CodeInserter();
+            SqlDatabaseType = SqlType.SqlServer;
         }
 
         /// <summary>
@@ -27,6 +29,13 @@ namespace DatabaseSchemaReader.CodeGen
         /// <value>The namespace.</value>
         public string Namespace { get; set; }
 
+        /// <summary>
+        /// Gets or sets the Sql Database Type.
+        /// </summary>
+        /// <value>
+        /// The provider.
+        /// </value>
+        public SqlType SqlDatabaseType { get; set; }
         /// <summary>
         /// Gets or sets the code target.
         /// </summary>

@@ -36,7 +36,8 @@ https://github.com/MeaningOfLights/dBSchemaReaderPoco.NetGen
 
 ## History - GRAPHQL Poco.Net Gen
 
-1.06	Support for Singular Tables (Many-Columns-To-One-Table) and relationships
+1.07	Support for PostGres Driver 
+1.06	Support for Singular Tables (Many-Columns-To-One-'Settings'-Table relationships)
 1.05	Support got GraphQL attributes [UseProjections], [Parent] and Decimal Types with annotations 
 1.04	Support for Many-To-Many relationships
 1.03	Validation of Database Schema for GraphQL POCO Models
@@ -107,7 +108,7 @@ Avoid Column Names:
 
 
 ## CODING CHANGES
-You may need to delete the bin/obj folders in the\dBSchemaReaderPoco.NetGen\DatabaseSchemaReader & Viewer project before seeing your changes take affect.
+You may need to delete the bin#obj folders in the\dBSchemaReaderPoco.NetGen\DatabaseSchemaReader & Viewer project before seeing your changes take affect.
 
 
 ## COMPILING

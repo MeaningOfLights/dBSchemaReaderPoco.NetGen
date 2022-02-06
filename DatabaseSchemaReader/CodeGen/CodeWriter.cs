@@ -198,8 +198,8 @@ namespace DatabaseSchemaReader.CodeGen
                 WriteClassFile(directory, "Subscription", sbSubscriptions.ToString());
 
                 WriteClassFile(directory, "Program", GraphQLProjectWriter.GenerateProgramFile(_codeWriterSettings));
-                WriteClassFile(directory, "Startup", GraphQLProjectWriter.GenerateStartupFile(tables, _codeWriterSettings));
-                WriteClassFile(directory, _codeWriterSettings.Namespace, GraphQLProjectWriter.GenerateProjectFile(), ".csproj");
+                WriteClassFile(directory, "Startup", GraphQLProjectWriter.GenerateStartupFile(_schema, _codeWriterSettings));
+                WriteClassFile(directory, _codeWriterSettings.Namespace, GraphQLProjectWriter.GenerateProjectFile(_schema), ".csproj");
                 WriteClassFile(directory, "launchSettings", GraphQLProjectWriter.GenerateLaunchSettingsFile(), ".json");
                 WriteClassFile(directory, "appsettings", GraphQLProjectWriter.GenerateAppSettings(_schema.ConnectionString), ".json");
                 WriteClassFile(directory, "appsettings.Development", GraphQLProjectWriter.GenerateAppSettings(_schema.ConnectionString), ".json");

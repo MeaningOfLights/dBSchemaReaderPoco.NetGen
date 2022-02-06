@@ -74,8 +74,9 @@ namespace DatabaseSchemaReader.CodeGen.GraphGL
             return sb.ToString();
         }
 
-        public static string GenerateStartupFile(List<DatabaseTable> tablesInSchema, CodeWriterSettings codeWriterSettings)
+        public static string GenerateStartupFile(DatabaseSchema databaseSchema, CodeWriterSettings codeWriterSettings)
         {
+            List<DatabaseTable> tablesInSchema = databaseSchema.Tables;
             //return File.ReadAllText(Path.Combine(Directory.GetCurrentDirectory(), "\\Startup.cs.txt"));
             StringBuilder sb = new StringBuilder();
             sb.AppendLine("using System;");
@@ -111,8 +112,20 @@ namespace DatabaseSchemaReader.CodeGen.GraphGL
             sb.AppendLine("");
             sb.AppendLine("        public void ConfigureServices(IServiceCollection services)");
             sb.AppendLine("        {");
-            sb.AppendLine("            services.AddPooledDbContextFactory<AppDbContext>(opt => opt.UseSqlServer");
-            sb.AppendLine(@"            (Configuration.GetConnectionString(""CommandConStr"")));");
+
+            switch (ProviderToSqlType.Convert(databaseSchema.Provider))
+            {
+                case SqlType.SqlServer:
+                    sb.AppendLine("            services.AddPooledDbContextFactory<AppDbContext>(opt => opt.UseSqlServer");
+                    sb.AppendLine(@"            (Configuration.GetConnectionString(""CommandConStr"")));");
+                    break;
+                case SqlType.PostgreSql:
+                    sb.AppendLine("            services.AddPooledDbContextFactory<AppDbContext>(opt => opt.UseNpgsql");  // Add Nuget: Npgsql.EntityFrameworkCore.PostgreSQL
+                    sb.AppendLine(@"           (Configuration.GetConnectionString(""CommandConStr"")));");
+                    break;
+                default:
+                    break;
+            }
             sb.AppendLine("");
             sb.AppendLine("            services");
             sb.AppendLine("             .AddGraphQLServer()");
@@ -158,7 +171,7 @@ namespace DatabaseSchemaReader.CodeGen.GraphGL
         }
 
 
-        public static string GenerateProjectFile()
+        public static string GenerateProjectFile(DatabaseSchema databaseSchema)
         {
             //return File.ReadAllText(Path.Combine(Directory.GetCurrentDirectory(), "\\Project.csproj.txt"));
             StringBuilder sb = new StringBuilder();
@@ -176,7 +189,19 @@ namespace DatabaseSchemaReader.CodeGen.GraphGL
             sb.AppendLine(@"      <PrivateAssets>all</PrivateAssets>");
             sb.AppendLine(@"      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>");
             sb.AppendLine(@"    </PackageReference>");
-            sb.AppendLine(@"    <PackageReference Include = ""Microsoft.EntityframeworkCore.SqlServer"" Version=""6.0.1"" />");
+
+            switch (ProviderToSqlType.Convert(databaseSchema.Provider))
+            {
+                case SqlType.SqlServer:
+                    sb.AppendLine(@"    <PackageReference Include = ""Microsoft.EntityframeworkCore.SqlServer"" Version=""6.0.1"" />");
+                    break;
+                case SqlType.PostgreSql:
+                    sb.AppendLine(@"    <PackageReference Include = ""Npgsql.EntityFrameworkCore.PostgreSQL"" Version = ""6.0.3"" /> ");
+                    break;
+                default:
+                    break;
+            }
+               
             sb.AppendLine(@"  </ItemGroup>");
             sb.AppendLine(@"");
             sb.AppendLine(@"</Project>");
