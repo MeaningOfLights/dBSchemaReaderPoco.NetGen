@@ -54,6 +54,7 @@ namespace DatabaseSchemaReader.CodeGen
             PrepareSchemaNames.Prepare(schema, codeWriterSettings.Namer);
         }
 
+
         /// <summary>
         /// Uses the specified schema to write class files, NHibernate/EF CodeFirst mapping and a project file. Any existing files are overwritten. If not required, simply discard the mapping and project file. Use these classes as ViewModels in combination with the data access strategy of your choice.
         /// </summary>
@@ -83,12 +84,7 @@ namespace DatabaseSchemaReader.CodeGen
             InitMappingProjects(directory, pw);
             _mappingNamer = new MappingNamer();
 
-            List<DatabaseTable> tables = new List<DatabaseTable>();
-            foreach (var table in _schema.Tables)
-            {
-                if (FilterIneligible(table)) continue;
-                tables.Add(table);
-            }
+            List<DatabaseTable> tables = GetNonSystemTables();
 
             if (_codeWriterSettings.CodeTarget == CodeTarget.PocoGraphGL)
             {
@@ -220,6 +216,16 @@ namespace DatabaseSchemaReader.CodeGen
             }
         }
 
+        public List<DatabaseTable> GetNonSystemTables()
+        {
+            List<DatabaseTable> tables = new List<DatabaseTable>();
+            foreach (var table in _schema.Tables)
+            {
+                if (FilterIneligible(table)) continue;
+                tables.Add(table);
+            }
+            return tables;
+        }
         /// <summary>
         /// Creates the project writer, using either 2008 or 2010 or VS2015 format.
         /// </summary>
@@ -270,7 +276,7 @@ namespace DatabaseSchemaReader.CodeGen
 
         private bool FilterIneligible(DatabaseTable table)
         {
-            if (!IsCodeFirst()) return false;
+            if (!IsCodeFirst() && _codeWriterSettings.CodeTarget != CodeTarget.PocoGraphGL) return false;
             if (table.IsManyToManyTable() && _codeWriterSettings.CodeTarget == CodeTarget.PocoEntityCodeFirst)
                 return true;
             if (table.PrimaryKey == null)
@@ -280,6 +286,8 @@ namespace DatabaseSchemaReader.CodeGen
             if (table.Name.Equals("__EFMigrationsHistory", StringComparison.OrdinalIgnoreCase)) //EF Core1
                 return true;
             if (table.Name.Equals("EdmMetadata", StringComparison.OrdinalIgnoreCase))
+                return true;
+            if (table.Name.Equals("sysdiagrams", StringComparison.OrdinalIgnoreCase))
                 return true;
             return false;
         }

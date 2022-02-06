@@ -1,40 +1,7 @@
 ﻿
-## Instructions with handy tips!
-
-
-# CODING CHANGES
-==============================
-You may need to delete the bin folders in the\dBSchemaReaderPoco.NetGen\DatabaseSchemaReader project before seeing your changes take affect.
-
-
-# COMPILING
-==============================
-
-BUILD DatabaseSchemaReader.csproj - that will fail.
-
-Then run the project and ignore the one error:
-
-Severity	Code	Description	Project	File	Line	Suppression State
-Error	MSB3644	The reference assemblies for .NETFramework,Version=v4.5 were not found. To resolve this, install the Developer Pack
-(SDK/Targeting Pack) for this framework version or retarget your application.
-
-
-# RUNNING
-==============================
-
-After compiling and running it will load Edge and show a 404 page..
-
-Visit both of these pages:
-https://localhost:5001/ui/voyager and https://localhost:5001/graphql/
-
-If you haven't created a Database yet the scripts are located here:
-https://github.com/MeaningOfLights/dBSchemaReaderPoco.NetGen/tree/master/DatabaseSchemaViewer/TestDatabases
-
-
-
 # dB Schema Reader Poco .Net Gen
 
-A cross-database GraphQL HotChocolate POCO generator.'
+A cross-database GraphQL HotChocolate POCO generator.
 
 Any ADO provider can be read  (SqlServer, SqlServer CE 4, MySQL, SQLite, System.Data.OracleClient, ODP, Devart, PostgreSql, DB2...) into a single standard model. 
 
@@ -43,10 +10,11 @@ For .net Core, we support SqlServer, SqlServer CE 4, SQLite, PostgreSql, MySQL a
 
 ## Purpose
 
-* Database schema read from most ADO providers
+* To read database schema's' from most ADO providers
 * Simple .net code generation:
-  * Generate POCO classes for tables, and NHibernate or EF Code First mapping files
-  * Generate simple ADO classes to use stored procedures
+  * Generate POCO classes GraphQL - NEW!
+  * Generate POCO classes for tables, and NHibernate or EF Code First mapping files - OLD!
+  * Generate simple ADO classes to use stored procedures - OLD!
 * Simple sql generation:
   * Generate table DDL (and translate to another SQL syntax, eg SqlServer to Oracle or SQLite)
   * Generate CRUD stored procedures (for SqlServer, Oracle, MySQL, DB2)
@@ -55,55 +23,40 @@ For .net Core, we support SqlServer, SqlServer CE 4, SQLite, PostgreSql, MySQL a
 * Simple cross-database migrations generator
 
 
-## History
+## Credits
 
 CREDIT - Original https://dbschemareader.codeplex.com/
 
 CREDIT - DB SCHEMA READER:
 https://github.com/martinjw/dbschemareader
 
- CREDIT - GRAPHQL Poco.Net Gen:
+CREDIT - GRAPHQL Poco.Net Gen:
 https://github.com/MeaningOfLights/dBSchemaReaderPoco.NetGen
 
 
-## How it works
+## History
 
-The Application reads database schemas by fetching all the Drivers installed on your Machine in the Form1 Constructor method:
-
-        public Form1()
-        {
-            InitializeComponent();
-
-            var TheDriverDataTable = DbProviderFactories.GetFactoryClasses();
+1.05	Support got GraphQL attributes [UseProjections], [Parent] and Decimal Types with annotations 
+1.04	Support for Many-To-Many relationships
+1.03	Validation of Database Schema for GraphQL POCO Models
+1.02	Completed GraphQL POCO Model generation with Foreign Keys, Resolvers, Descriptors & etc
+1.01	Build in support for GraphQL POCO Models	
 
 
-TheDriverDataTable contains all the drivers on your machine. If you're missing one, for example the PostGres driver you can add it to your app.config or web.config:
-
-  <system.data>
-    <DbProviderFactories>
-      <add name="Npgsql Data Provider" invariant="Npgsql" description=".Net Data Provider for PostgreSQL" type="Npgsql.NpgsqlFactory, Npgsql, Culture=neutral, PublicKeyToken=5d8b90d52f46fda7"/>
-    </DbProviderFactories>
-  </system.data>
-
-The driver will now be listed in the DropDownList in the Application, for it to work you need the .Net Data Provider for PostgreSQL DLL in your bin folder. You can install the DLL dependancy via the NuGet package: Npgsql
-
-After specifying the Driver and confirming the Connection String is correct, click the "Read Schema" button. If there are errors its due to missing drivers or incorrect connection string.
-
-Once the Schema is read click the "Code Gen" button to generate a range of Plain Old Class Objects (NHibernate, EF, Ria, etc).
-
-# Unsupported
+## Not yet supported
 
 Denormalised, meta-meta, inheritance and NoSQL databases.
 
-# TO DO
+## TO DO
 
-* Scan for "object" datatypes
-
-* Support for Many-To-Many relationships
+* Add Update functionaity
+* Resolvers are mapped using Froeign Keys, it would be better using the actual column names. Sometime they're not named the same!
+* Related to the above TODO, support for Primary Keys other than "Id". See ""BakersYchange"" sample for the problems non-Id PK columns cause: DatabaseSchemaViewer > TestDatabases
+* Support for StoredProcedures & Functions
 * Support Enum DataTypes (in PostGres)
-* Commandline usage to run on Mac & Linux 
+* Command Line usage to run on Mac & Linux 
 
-# Designing the DataBase
+## Designing the DataBase
 
 The tool contains a button Validate Schema for GraphQL - run this and it will tell you all the issues by detecting the following:
 
@@ -149,8 +102,38 @@ Avoid Column Names:
 - Setting
 
 
-# Generating the GraphQL DataBase POCOs
+### Instructions with handy tips!
 
-After generating open the solution in Visual Studio and make sure the Nuget Packages are referenced.
 
-Go through all the errors, typically pressing Ctrl + Space over any red squiggle lines and confirming the suggestion or fixing it.
+## CODING CHANGES
+You may need to delete the bin/obj folders in the\dBSchemaReaderPoco.NetGen\DatabaseSchemaReader & Viewer project before seeing your changes take affect.
+
+
+## COMPILING
+
+BUILD DatabaseSchemaReader.csproj - that will fail.
+
+Then run the project and ignore the one error:
+
+Severity	Code	Description	Project	File	Line	Suppression State
+Error	MSB3644	The reference assemblies for .NETFramework,Version=v4.5 were not found. To resolve this, install the Developer Pack
+(SDK/Targeting Pack) for this framework version or retarget your application.
+
+
+## RUNNING
+
+After compiling and running it will load a browser and show a 404 page..
+
+While its running manually visit both these pages:
+https://localhost:5001/ui/voyager and https://localhost:5001/graphql/
+
+If you haven't created a Database yet the scripts are located here:
+https://github.com/MeaningOfLights/dBSchemaReaderPoco.NetGen/tree/master/DatabaseSchemaViewer/TestDatabases
+
+
+
+# After Generating the GraphQL DataBase POCOs
+
+After generating, open the solution in Visual Studio and make sure the Nuget Packages are referenced.
+
+Go through all the errors, typically pressing Ctrl + Space over any red squiggle lines and fixing any issues.

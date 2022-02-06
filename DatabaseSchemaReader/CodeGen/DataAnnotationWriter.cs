@@ -81,14 +81,24 @@ namespace DatabaseSchemaReader.CodeGen
                     //we've decided it's an integer type, decimal annotation not valid
                     return;
                 }
-                //[Range(typeof(decimal),"0", "999")]
-                var max = column.Precision.GetValueOrDefault() - column.Scale.GetValueOrDefault();
-                if (max > 0 && max < 28)
+
+                // Decimal columns need to be decorated
+                if (_codeWriterSettings.CodeTarget == CodeTarget.PocoGraphGL)
                 {
-                    WriteDecimalRange(cb, max);
+                    int precision = column.Precision == null ? 18 : column.Precision.GetValueOrDefault();
+                    int scale = column.Scale == null ? 2 : column.Scale.GetValueOrDefault();
+                    WriteDecimalRange(cb, precision, scale);
+                }
+                else
+                {
+                    //[Range(typeof(decimal),"0", "999")]
+                    var max = column.Precision.GetValueOrDefault() - column.Scale.GetValueOrDefault();
+                    if (max > 0 && max < 28)
+                    {
+                        WriteDecimalRange(cb, max);
+                    } 
                 }
             }
-
         }
 
         private static void WriteIndex(ClassBuilder cb, DatabaseColumn column)
@@ -134,6 +144,20 @@ namespace DatabaseSchemaReader.CodeGen
                 range = range.Replace(")]",
                     ", ErrorMessage=\"" +
                     string.Format(CultureInfo.InvariantCulture, rangeErrorMessage, maximum, _friendlyName) +
+                    "\")]");
+            }
+            cb.AppendLine(range);
+        }
+
+        private void WriteDecimalRange(ClassBuilder cb, int precision, int scale)
+        {
+            var range = string.Format(CultureInfo.InvariantCulture, "[Column(TypeName = \"decimal({0}, {1})\")]", precision, scale);
+            var rangeErrorMessage = _codeWriterSettings.RangeErrorMessage;
+            if (!string.IsNullOrEmpty(rangeErrorMessage))
+            {
+                range = range.Replace(")]",
+                    ", ErrorMessage=\"" +
+                    string.Format(CultureInfo.InvariantCulture, rangeErrorMessage, precision, _friendlyName) +
                     "\")]");
             }
             cb.AppendLine(range);

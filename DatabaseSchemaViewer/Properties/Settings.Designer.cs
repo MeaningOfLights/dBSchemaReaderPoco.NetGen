@@ -25,7 +25,7 @@ namespace DatabaseSchemaViewer.Properties {
         
         [global::System.Configuration.ApplicationScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("public")]
+        [global::System.Configuration.DefaultSettingValueAttribute("dbo")]
         public string SchemaOwner {
             get {
                 return ((string)(this["SchemaOwner"]));
@@ -34,7 +34,7 @@ namespace DatabaseSchemaViewer.Properties {
         
         [global::System.Configuration.ApplicationScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("Server=.;Database=CommandsDBGraphql;Integrated Security=True;")]
+        [global::System.Configuration.DefaultSettingValueAttribute("Server=.;Database=BakerXChange;Integrated Security=True;")]
         public string ConnectionString {
             get {
                 return ((string)(this["ConnectionString"]));

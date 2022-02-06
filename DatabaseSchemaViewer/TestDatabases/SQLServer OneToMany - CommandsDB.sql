@@ -38,7 +38,7 @@ SET IDENTITY_INSERT [dbo].[Commands] ON
 GO
 INSERT [dbo].[Commands] ([Id], [HowTo], [CommandLine], [PlatformId]) VALUES (1, N'Lists Files and Folders', N'ls', 1)
 GO
-INSERT [dbo].[Commands] ([Id], [HowTo], [CommandLine], [PlatformId]) VALUES (6, N'Lists Files and Fodlers', N'dir', 2)
+INSERT [dbo].[Commands] ([Id], [HowTo], [CommandLine], [PlatformId]) VALUES (6, N'Lists Files and Folders', N'dir', 2)
 GO
 INSERT [dbo].[Commands] ([Id], [HowTo], [CommandLine], [PlatformId]) VALUES (7, N'Ouput', N'Debug.Write', 3)
 GO

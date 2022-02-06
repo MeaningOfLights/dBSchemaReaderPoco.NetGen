@@ -50,4 +50,23 @@ namespace DatabaseSchemaReader.CodeGen
 
         #endregion
     }
+
+    /// <summary>
+    /// Fixes database names to be pascal case and singular.
+    /// Consider replacing this with something a little more powerful- eg Castle Project inflector 
+    /// https://github.com/castleproject/Castle.ActiveRecord/blob/master/src/Castle.ActiveRecord/Framework/Internal/Inflector.cs
+    /// Or https://alastaircrabtree.com/detecting-plurals-in-dot-net/
+    /// </summary>
+    /// 
+    //You can make your own by inheriting from DatabaseSchemaReader.CodeGen.Namer, and overridding NameCollection
+    //public class MsPluralizingNamer : PluralizingNamer
+    //{
+    //    public override string NameCollection(string className)
+    //    {
+    //        var service =
+    //            System.Data.Entity.Design.PluralizationServices.PluralizationService.CreateService(
+    //                CultureInfo.GetCultureInfo("en-us"));
+    //        return service.Pluralize(className);
+    //    }
+    //}
 }

@@ -213,9 +213,10 @@ namespace DatabaseSchemaReader.CodeGen
                 _cb.AppendLine("using System.Collections.Generic;");
             }
             _cb.AppendLine("using System.ComponentModel.DataAnnotations;");
-            if (_codeWriterSettings.CodeTarget == CodeTarget.PocoEntityCodeFirst &&
+            if ((_codeWriterSettings.CodeTarget == CodeTarget.PocoGraphGL) ||
+                (_codeWriterSettings.CodeTarget == CodeTarget.PocoEntityCodeFirst &&
                 _codeWriterSettings.WriteCodeFirstIndexAttribute &&
-                _table.Indexes.Count > 0)
+                _table.Indexes.Count > 0))
             {
                 //Index attribute
                 _cb.AppendLine("using System.ComponentModel.DataAnnotations.Schema;");

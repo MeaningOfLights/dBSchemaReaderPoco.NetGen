@@ -11,12 +11,16 @@ namespace DatabaseSchemaReader.CodeGen.GraphGL
         public static string AllSchemaIssues(DatabaseSchema databaseSchema)
         {
             StringBuilder sb = new StringBuilder();
-            sb.AppendLine(UnknownDataTypes(databaseSchema.Tables));
-            sb.AppendLine(ReservedKeywords(databaseSchema.Tables));
-            sb.AppendLine(AllTablesArePlural(databaseSchema.Tables));
-            sb.AppendLine(AllTableColumnsAreNonPlural(databaseSchema.Tables));
-            sb.AppendLine(AllTablePrimaryKeysAreNamedId(databaseSchema.Tables));
-            sb.AppendLine(AllTableColumnsAreNotAcronyms(databaseSchema.Tables));
+            CodeWriter cw = new CodeWriter(databaseSchema, new CodeWriterSettings { CodeTarget= CodeTarget.PocoGraphGL});
+            List<DatabaseTable> tables = cw.GetNonSystemTables();
+            
+            sb.AppendLine(UnknownDataTypes(tables));
+            sb.AppendLine(ReservedKeywords(tables));
+            sb.AppendLine(EveryTableHasAPrimaryKey(tables));
+            sb.AppendLine(AllTablesArePlural(tables));
+            sb.AppendLine(AllTableColumnsAreNonPlural(tables));
+            sb.AppendLine(AllTablePrimaryKeysAreNamedId(tables));
+            sb.AppendLine(AllTableColumnsAreNotAcronyms(tables));
             if (sb.Length > 0)
             {
                 sb.Insert(0, "====================================================================================\r\n");
@@ -24,16 +28,14 @@ namespace DatabaseSchemaReader.CodeGen.GraphGL
                 sb.Insert(0, "====================================================================================\r\n");
             }
 
-            sb.AppendLine(AllForeignKeysMapToTablePrimaryKeys(databaseSchema.Tables));
-            sb.AppendLine(AllTableColumnsAreThreeLetters(databaseSchema.Tables));
-            sb.AppendLine(AllTableForeignKeysEndWithId(databaseSchema.Tables));
+            sb.AppendLine(AllForeignKeysMapToTablePrimaryKeys(tables));
+            sb.AppendLine(AllTableColumnsAreThreeLetters(tables));
+            sb.AppendLine(AllTableForeignKeysEndWithId(tables));
 
-            sb.Append(ObjectsWillBeRenamed(databaseSchema.Tables));
+            sb.Append(ObjectsWillBeRenamed(tables));
 
             return sb.ToString();
         }
-
-
 
         //It's a HotChocolate convention that database table names to be plural. 
         private static string AllTablesArePlural(List<DatabaseTable> databaseTables)
@@ -163,6 +165,35 @@ namespace DatabaseSchemaReader.CodeGen.GraphGL
             return wasIssue ? sb.ToString() : string.Empty;
         }
 
+        // Ensure every table has a Primary Key
+
+        private static string EveryTableHasAPrimaryKey(List<DatabaseTable> databaseTables)
+        {
+            bool wasIssue = false;
+            StringBuilder sb = new StringBuilder();
+            sb.AppendLine("");
+            sb.AppendLine("Every Table Has A Primary Key:");
+            sb.AppendLine("------------------------------------------------------");
+            foreach (var databaseTable in databaseTables)
+            {
+                bool hasPrimaryKey = false;
+                foreach (var col in databaseTable.Columns)
+                {
+                    if (col.IsPrimaryKey)
+                    {
+                        hasPrimaryKey = true;
+                        break;
+                    }
+                }
+                if (!hasPrimaryKey)
+                {
+                    wasIssue = true;
+                    sb.AppendLine("FIX TABLE: " + databaseTable.Name + " - NO PRIMARY KEY COLUMN");
+                }
+            }
+            return wasIssue ? sb.ToString() : string.Empty;
+        }
+
         //Avoid Acronyms like DOB, use Dob or DateOfBirth instead.
         private static string AllTableColumnsAreNotAcronyms(List<DatabaseTable> databaseTables)
         {
@@ -236,7 +267,7 @@ namespace DatabaseSchemaReader.CodeGen.GraphGL
                                 if (foundAsForeignKey)
                                 {
                                     wasIssue2= true;
-                                    sb2.AppendLine("NOTE: " + databaseTable.Name + " Column: " + col.Name);
+                                    sb2.AppendLine("NOTE: " + databaseTable.Name + " Column: " + col.Name  + " - check for any typo's causing inconsistent with Table-Id relationship");
                                 }
                                 else
                                 {

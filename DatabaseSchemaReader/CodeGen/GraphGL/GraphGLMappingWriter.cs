@@ -14,8 +14,8 @@ namespace DatabaseSchemaReader.CodeGen.GraphGL
         private readonly MappingNamer _mappingNamer;
         private readonly ClassBuilder _cb;
         private DatabaseTable _inheritanceTable;
-        private List<DatabaseConstraint> _foreignKeyResolverLookUps;
-        private List<DatabaseConstraint> _singleTableKeyResolverLookUps;
+        private readonly List<DatabaseConstraint> _foreignKeyResolverLookUps;
+        private readonly List<DatabaseConstraint> _singleTableKeyResolverLookUps;
 
         public GraphGLMappingWriter(DatabaseTable table, CodeWriterSettings codeWriterSettings, MappingNamer mappingNamer, List<DatabaseConstraint> foreignKeyResolverLookUps, List<DatabaseConstraint> singleTableKeyResolverLookUps)
         {
@@ -40,7 +40,7 @@ namespace DatabaseSchemaReader.CodeGen.GraphGL
 
         public string Write()
         {
-            // Name of the single C# file that holds all the dB table object classes 
+            // Name of the single C# file that holds all the dB table classes/records 
             MappingClassName = _mappingNamer.NameMappingClass(_table.NetName);
 
             _cb.AppendLine("using System.Linq;");
@@ -53,13 +53,15 @@ namespace DatabaseSchemaReader.CodeGen.GraphGL
             using (_cb.BeginNest("namespace " + _codeWriterSettings.Namespace + "." + _table.NetName + "s"))
             {
                 AddType();
-                //The following records and classes only have a dependancy on "using HotChocolate.Types;"
+                //The following classes/records only have a single dependancy on "using HotChocolate.Types;"
                 //I've combined them into one file for project management (as the dBs will typically have a large number of tables to warrent a code generator)
-                //_cb.AppendLine("using HotChocolate.Types;");
                 AddInput();
                 AddInputType();
                 AddPayload();
                 AddPayloadType();
+
+                //TO DO - Add Update functionaity
+                //https://stackoverflow.com/questions/61064861/how-can-i-create-a-graphql-partial-update-with-hotchocolate-and-efcore
             }
             return _cb.ToString();
         }
@@ -107,7 +109,8 @@ namespace DatabaseSchemaReader.CodeGen.GraphGL
                 sb.Append(letter);
                 sb.Append(".");
 
-                // When we encounter a foreign key column that doesn't map directly (it could refer to a Single Table), then there could be multiple of these columns so we need to remove ambiguity:
+                // When we encounter a foreign key column that doesn't map to the 'Table-Id' convention,
+                // then there could be multiple of these columns so we need to name the methods uniquely from GetSomeThing to GetSomeThing-BySomeThingID:
                 if (NameFixer.RemoveId(fKey.Columns[0]) != fKeyTableName && fKey.Columns[0].Contains("Id"))
                 {
                     sb.Append(NameFixer.RemoveId(fKey.Columns[0]));
@@ -157,7 +160,7 @@ namespace DatabaseSchemaReader.CodeGen.GraphGL
                 string table = string.Empty;
                 char letter = _table.NetName[0];
 
-                // When we encounter a foreign key column that doesn't map directly to another table (it could refer to a Single Table), 
+                // When we encounter a foreign key column that doesn't map to the 'Table-Id' convention,  
                 // then there could be more than one and we need to add multiple resolvers for each of the lookups
                 var singleTableResolvers = _singleTableKeyResolverLookUps.Where(a => a.RefersToTable == _table.Name);
                 if (singleTableResolvers.Count() > 0)
@@ -166,7 +169,7 @@ namespace DatabaseSchemaReader.CodeGen.GraphGL
                     {
                         refersToTable = NameFixer.MakeSingular(resolver.TableName);
                         table = NameFixer.MakeSingular(_table.Name);
-                        using (_cb.BeginNest("public IQueryable<" + refersToTable + "> Get" + resolver.TableName + "By" + resolver.Columns[0] + "(" + table + " " + NameFixer.ToCamelCase(table) + ", [ScopedService] AppDbContext context)"))
+                        using (_cb.BeginNest("public IQueryable<" + refersToTable + "> Get" + resolver.TableName + "By" + resolver.Columns[0] + "([Parent]" + table + " " + NameFixer.ToCamelCase(table) + ", [ScopedService] AppDbContext context)"))
                         {
                             StringBuilder sb = new StringBuilder();
                             sb.Append("return context.");
@@ -197,7 +200,7 @@ namespace DatabaseSchemaReader.CodeGen.GraphGL
 
                     refersToTable = NameFixer.MakeSingular(lookup.TableName);
                     table = NameFixer.MakeSingular(lookup.RefersToTable);
-                    using (_cb.BeginNest("public IQueryable<" + refersToTable + "> Get" + lookup.TableName + "(" + table + " " + NameFixer.ToCamelCase(table) + ", [ScopedService] AppDbContext context)"))
+                    using (_cb.BeginNest("public IQueryable<" + refersToTable + "> Get" + lookup.TableName + "([Parent]" + table + " " + NameFixer.ToCamelCase(table) + ", [ScopedService] AppDbContext context)"))
                     {
                         sb.Append("return context.");
                         sb.Append(lookup.TableName);
@@ -217,29 +220,25 @@ namespace DatabaseSchemaReader.CodeGen.GraphGL
                     }
                 }
                
-
                 foreach (var fKey in _table.ForeignKeys.Distinct())
                 {
                     if (Equals(fKey.ReferencedTable(_table.DatabaseSchema), _inheritanceTable))
                         continue;
 
                     string fKeyTableName = NameFixer.MakeSingular(fKey.RefersToTable);
-                    // When we encounter a foreign key column that doesn't map directly (it could refer to a Single Table), then there could be multiple of these columns so we need to remove ambiguity:
+                    // When we encounter a foreign key column that doesn't map to the 'Table-Id' convention, then there could be multiple of these columns so we need to name the methods uniquely from GetSomeThing to GetSomeThing-BySomeThingID:
                     if (NameFixer.RemoveId(fKey.Columns[0]) != fKeyTableName && fKey.Columns[0].Contains("Id"))
                     {
-                        //GetSOMETHINGBySOMETHINGSettingId
-                        using (_cb.BeginNest("public " + fKeyTableName + " Get" + fKeyTableName + "By" + fKey.Columns[0] + "(" + _table.NetName + " " + tableNamePascalCase + ", [ScopedService] AppDbContext context)", "Resolvers"))
+                        using (_cb.BeginNest("public " + fKeyTableName + " Get" + fKeyTableName + "By" + fKey.Columns[0] + "([Parent]" + _table.NetName + " " + tableNamePascalCase + ", [ScopedService] AppDbContext context)", "Resolvers"))
                         {
-                            _cb.AppendLine(" return context." + fKey.RefersToTable + ".FirstOrDefault(p => p.Id == " + tableNamePascalCase + "." + fKey.Columns[0] + ");");
+                            _cb.AppendLine(" return context." + fKey.RefersToTable + ".FirstOrDefault(" + letter + " => " + letter + ".Id == " + tableNamePascalCase + "." + fKey.Columns[0] + ");");
                         }
                     }
-
                     else
                     {
-                        using (_cb.BeginNest("public " + fKeyTableName + " Get" + fKeyTableName + "(" + _table.NetName + " " + tableNamePascalCase + ", [ScopedService] AppDbContext context)", "Resolvers"))
-                        {
-                       
-                            _cb.AppendLine(" return context." + fKey.RefersToTable + ".FirstOrDefault(p => p.Id == " + tableNamePascalCase + "." + fKey.Columns[0] + ");");
+                        using (_cb.BeginNest("public " + fKeyTableName + " Get" + fKeyTableName + "([Parent]" + _table.NetName + " " + tableNamePascalCase + ", [ScopedService] AppDbContext context)", "Resolvers"))
+                        {                       
+                            _cb.AppendLine(" return context." + fKey.RefersToTable + ".FirstOrDefault(" + letter + " => " + letter + ".Id == " + tableNamePascalCase + "." + fKey.Columns[0] + ");");
                         }
                     }
                 }

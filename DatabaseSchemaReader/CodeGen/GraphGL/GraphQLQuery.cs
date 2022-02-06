@@ -47,7 +47,9 @@ namespace DatabaseSchemaReader.CodeGen.GraphGL
             sb.AppendLine("        /// </summary>");
             sb.AppendLine(@"        /// <param name=""context"">The <see cref=""AppDbContext""/>.</param>");
             sb.AppendLine(@"        /// <returns>The queryable <see cref=""" + table.NetName + @"""/>.</returns>");
+            sb.AppendLine(@"        /// Attribute Order: UseDbContext -> UsePaging -> UseProjection -> UseFiltering -> UseSorting.");
             sb.AppendLine("        [UseDbContext(typeof(AppDbContext))]");
+            sb.AppendLine("        [UseProjection]"); 
             sb.AppendLine("        [UseFiltering]");
             sb.AppendLine("        [UseSorting]");
             sb.AppendLine(@"        [GraphQLDescription(""Gets the queryable " + NameFixer.ToCamelCase(table.NetName) + @"."")]");

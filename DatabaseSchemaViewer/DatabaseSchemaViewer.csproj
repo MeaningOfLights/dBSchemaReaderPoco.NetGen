@@ -266,7 +266,12 @@
     </BootstrapperPackage>
   </ItemGroup>
   <ItemGroup>
-    <Content Include="TestDatabases\SQLServerOneToMany.sql" />
+    <Content Include="TestDatabases\SQLServer JunctionTable - BakersXChangeDB.png" />
+    <Content Include="TestDatabases\SQLServer JunctionTable - BakersXChangeDB.sql" />
+    <Content Include="TestDatabases\SQLServer JunctionTable - BakersYChangeDB.png" />
+    <Content Include="TestDatabases\SQLServer JunctionTable - BakersYChangeDB.sql" />
+    <Content Include="TestDatabases\SQLServer OneToMany - CommandsDB.png" />
+    <Content Include="TestDatabases\SQLServer OneToMany - CommandsDB.sql" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="..\packages\System.Text.Json.6.0.0\build\System.Text.Json.targets" Condition="Exists('..\packages\System.Text.Json.6.0.0\build\System.Text.Json.targets')" />

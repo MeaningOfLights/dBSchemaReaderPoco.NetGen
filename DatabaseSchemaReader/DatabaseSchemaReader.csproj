@@ -34,7 +34,7 @@
     <GenerateAssemblyVersionAttribute>false</GenerateAssemblyVersionAttribute>
     <GenerateAssemblyFileVersionAttribute>false</GenerateAssemblyFileVersionAttribute>
     <Version>2.7.11</Version>
-    <Configurations>Debug;Release;net45;Net4</Configurations>
+    <Configurations>Debug;Release;net46;Net4</Configurations>
   </PropertyGroup>
 
   <ItemGroup Condition=" '$(TargetFramework)' == 'netstandard1.5' ">

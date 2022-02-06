@@ -59,7 +59,7 @@ namespace DatabaseSchemaReader.CodeGen.GraphGL
             sb.AppendLine(@"        [GraphQLDescription(""Adds a " + table.NetName + @"."")]");
             sb.AppendLine("        public async Task<Add" + table.NetName + "Payload> Add" + table.NetName + "Async(Add" + table.NetName + "Input input, [ScopedService] AppDbContext context, [Service] ITopicEventSender eventSender, CancellationToken cancellationToken)");
             sb.AppendLine("        {");
-            sb.AppendLine("            var " + NameFixer.ToCamelCase(table.NetName) + " = new " + table.NetName);
+            sb.AppendLine("            var " + NameFixer.ToCamelCase(table.NetName) + " = new  Models." + table.NetName);
             sb.AppendLine("            {");
             sb.Append(AddMutationParameters(table));
             sb.AppendLine("            };");
