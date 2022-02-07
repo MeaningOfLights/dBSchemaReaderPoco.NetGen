@@ -95,7 +95,7 @@ Its critical you  fix all these up manually, in the case of ENUMS you need to ma
 
 - For every primary key always use "Id" as the column name. For foreign key columns, always use the foreign key table name and the primary key Id. 
 
-- For example, an **Employee** table with a foriegn key **OccupationId** is easily seen to map to the **Occupation** table and its primary key **Id**.
+- For example, an **Employees** table with a foriegn key **OccupationId** is easily seen to map to the **Occupations** table and its primary key **Id**.
 
 - Apart from ""Id"" avoid column names less than 3 letters, aim for a word or two to explain the field.
 

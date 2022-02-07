@@ -89,8 +89,8 @@ The tool contains a button **Validate Schema** for GraphQL - run this and tells 
 
 - Any column names that are singular, also a HotChocolate convention  . 
 
-- When using special database types such as Database ENUMS they may not translate to a .Net DataType and show up in the output as "object" datatypes.
-Its critical you fix these up manually. In the case of ENUMS you need to manually declare them in the codebase, replacing "object" datatypes.
+- When using special database types such as Enums they may not translate to a .Net DataType and instead show up in the output as "object".
+Its critical you manually fix these up. In the case of Enums you need to manually declare them in the codebase replacing all "object" variable declarations!
 
 - Every primary key must use "Id" as the column name. For foreign key columns always use the foreign key table name and the primary key Id. For example, an **Employee** table with a foriegn key **OccupationId** is easily seen to map to the **Occupation** table and its primary key **Id**.
 
