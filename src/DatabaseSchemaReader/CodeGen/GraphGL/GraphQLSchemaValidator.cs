@@ -15,6 +15,7 @@ namespace DatabaseSchemaReader.CodeGen.GraphGL
             List<DatabaseTable> tables = cw.GetNonSystemTables();
 
             sb.AppendLine(ReservedConnectionStringIssues(databaseSchema));
+            sb.AppendLine(AlwaysHaveNONNULLPrimaryKeys(tables));
             sb.AppendLine(UnknownDataTypes(tables));
             sb.AppendLine(ReservedKeywords(tables));
             sb.AppendLine(EveryTableHasAPrimaryKey(tables));
@@ -104,7 +105,32 @@ namespace DatabaseSchemaReader.CodeGen.GraphGL
             }
             return wasIssue ? sb.ToString() : string.Empty;
         }
-                
+
+
+        //Always have NON-NULL Primary Keys
+
+        private static string AlwaysHaveNONNULLPrimaryKeys(List<DatabaseTable> databaseTables)
+        {
+            bool wasIssue = false;
+            StringBuilder sb = new StringBuilder();
+            sb.AppendLine("");
+            sb.AppendLine("Always have NON-NULL Primary Keys:");
+            sb.AppendLine("------------------------------------------------------");
+            foreach (var databaseTable in databaseTables)
+            {
+                foreach (var col in databaseTable.Columns)
+                {
+                    if (!col.IsPrimaryKey) continue;
+                    if (col.Nullable)
+                    {
+                        wasIssue = true;
+                        sb.AppendLine("FIX: " + databaseTable.Name + " NULLABLE Primary Key Column: " + col.Name);
+                    }
+                    break;
+                }
+            }
+            return wasIssue ? sb.ToString() : string.Empty;
+        }
         public static string ReservedConnectionStringIssues(DatabaseSchema databaseSchema)
         {
             bool wasIssue = false;
