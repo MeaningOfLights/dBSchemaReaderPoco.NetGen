@@ -3,7 +3,7 @@
 
 A cross-database GraphQL HotChocolate POCO generator!  
 
-![How dB2GraphQL Works](../dB2GraphQL.Net/Media/HowToDb2Graph.gif "dB 2 GraphQL .Net Generator")  
+![How dB2GraphQL Works](/Media/HowToDb2Graph.gif "dB 2 GraphQL .Net Generator")  
 
 Any Database supported by Microsoft ADO.Net provider can be read  (SqlServer, SqlServer CE 4, MySQL, SQLite, System.Data.OracleClient, ODP, Devart, PostgreSql, DB2...) into a single standard model. 
 
@@ -27,6 +27,7 @@ For .net Core, we support SqlServer, SqlServer CE 4, SQLite, PostgreSql, MySQL a
 
 ## History - dB2GraphQL.Net
 
+1.09	Added a ReadMe and included an animated gif with instructions on how to use the system
 1.08:	Support for Circular References, Sqlite Driver and an example Sqlite Database to demonstrate Circular References  
 1.07:	Support for PostGres Driver   
 1.06:	Support for Singular Tables (Many-Columns-To-One-'Settings'-Table Relationships)  

@@ -10,7 +10,7 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{A36496B0-0D4A-4D92-8AA4-CDD5755E629E}"
 	ProjectSection(SolutionItems) = preProject
 		global.json = global.json
-		ReadMe.md = ReadMe.md
+		..\ReadMe.md = ..\ReadMe.md
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DatabaseSchemaReaderTest", "DatabaseSchemaReaderTest\DatabaseSchemaReaderTest.csproj", "{7EF4F6B5-100C-432A-9858-C7F3FEC14F5C}"
