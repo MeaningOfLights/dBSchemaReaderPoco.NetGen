@@ -117,7 +117,7 @@ two columns named 'UserId'. In this case we can use the Singular Table design an
 - In Test Databses 4. PostgreSQL Singular Settings Table - EventOrganiser.sql, I demo using a single Settings table to hold Industry, Title & Country values
 that are shared to multiple tables. Notice the naming convention IndustrySettingId, TitleSettingId, CountrySettingId. Same as I did with CreatedByUserID:
 
-![Single Settings Table](/Media/4.%20PostgreSQL%20Singular%20Settings%20Table%20-%20EventOrganiser.png "Many-Columns-To-One")  
+![Single Settings Table](/TestDatabases/4.%20PostgreSQL%20Singular%20Settings%20Table%20-%20EventOrganiser.png "Many-Columns-To-One")  
 
 
 ## Reserved Keywords
