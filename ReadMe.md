@@ -28,7 +28,7 @@ For .Net Core, we support SqlServer, SqlServer CE 4, SQLite, PostgreSql, MySQL a
 
 ## History - dB2GraphQL.Net
 
-* 1.10:	Added a Postgres Test Database ""4. to demonstrate Singular Tables (Many-Columns-To-One-'Settings'-Table Relationships)"", plus tweaks to Config/Descriptors/Resolvers for Singular Tables
+* 1.10:	Added a Postgres Test Database [4. PostgreSQL Singular Settings Table - EventOrganiser](TestDatabases) to demonstrate Singular Tables (Many-Columns-To-One-'Settings'-Table Relationships)"", plus tweaks to Config/Descriptors/Resolvers for Singular Tables
 * 1.09	Added a ReadMe and included an animated gif with instructions on how to use the system  
 * 1.08:	Support for Circular References, Sqlite Driver and an example Sqlite Database to demonstrate Circular References ""3. Sqlite CircularRef - SeparationOfPowers""
 * 1.07:	Support for PostGres Driver   
