@@ -1,4 +1,6 @@
-
+----------------------------------------------
+--THIS IS A POSTGRESQL DATABASE SCRIPT TO CREATE THE EVENTORGANISER DATABASE!!! 
+----------------------------------------------
 
 DROP SCHEMA IF EXISTS private cascade;
 CREATE SCHEMA private;
@@ -35,7 +37,7 @@ comment on function  public.fn_current_user_id() is
 create or replace function public.fn_set_modified_fields() returns trigger as $$
 begin
   new."DateModified" := current_timestamp;
-  new."ModifiedBy" := fn_current_user_id();
+  new."ModifiedByUserId" := fn_current_user_id();
   return new;
 end;
 $$ language plpgsql;
@@ -58,8 +60,8 @@ CREATE TABLE public."Users" (
 	"IsClientAdmin" bool NULL,
 	"IsApproved" bool NULL,
 	"Active" bool NOT NULL DEFAULT True,
-	"UserId" int not null default 1,
-	"ModifiedBy" int4 NULL,
+	"CreatedByUserId" int not null default 1,
+	"ModifiedByUserId" int4 NULL,
 	"DateCreated" timestamptz NOT NULL default now(),
 	"DateModified" timestamptz NULL,
 	CONSTRAINT User_pkey PRIMARY KEY ("Id")
@@ -76,8 +78,8 @@ comment on column public."Users"."UserStatus" is 'The users status for joining t
 comment on column public."Users"."IsClientAdmin" is 'The user can approve new users.';
 comment on column public."Users"."IsApproved" is 'The records last modified date.';
 comment on column public."Users"."Active" is 'The user is active (not deactivated).';
-comment on column public."Users"."UserId" is 'The user who first created the record.';
-comment on column public."Users"."ModifiedBy" is 'The records last modified user.';
+comment on column public."Users"."CreatedByUserId" is 'The user who first created the record.';
+comment on column public."Users"."ModifiedByUserId" is 'The records last modified user.';
 comment on column public."Users"."DateCreated" is 'The records created date.';
 comment on column public."Users"."DateModified" is 'The records last modified date.';
 
@@ -102,11 +104,12 @@ CREATE TABLE public."Locales" (
 	"State" text NULL,
 	"TaxRate" int4 NOT NULL default 10,
 	"Active" bool NULL DEFAULT true,
-	"UserId" int not null default public.fn_current_user_id() references public."Users"("Id"),
-	"ModifiedBy" int4 NULL,
+	"CreatedByUserId" int not null default public.fn_current_user_id() references public."Users"("Id"),
+	"ModifiedByUserId" int4 NULL,
 	"DateCreated" timestamptz NOT NULL default now(),
 	"DateModified" timestamptz NULL,
-	CONSTRAINT Locale_pkey PRIMARY KEY ("Id")
+	CONSTRAINT Locale_pkey PRIMARY KEY ("Id"),
+	CONSTRAINT FK_Locale_EditUsers FOREIGN KEY ("ModifiedByUserId") REFERENCES public."Users"("Id")
 );
 
 
@@ -133,7 +136,7 @@ comment on column private."UserAccounts"."PasswordHash" is 'An opaque hash of th
  
 ALTER SEQUENCE public."Users_Id_seq" RESTART 1;
 
-INSERT INTO public."Users" ("LocaleId","Permission","FirstName","LastName","OpenIdUrl","UserStatus","Active","IsClientAdmin","IsApproved","UserId") VALUES
+INSERT INTO public."Users" ("LocaleId","Permission","FirstName","LastName","OpenIdUrl","UserStatus","Active","IsClientAdmin","IsApproved","CreatedByUserId") VALUES
 (1,5,'Admin','Admin','http://openid.net','Registered',true,true,true,1);
 
 ALTER SEQUENCE private."UserAccounts_Id_seq" RESTART 1;
@@ -142,9 +145,9 @@ INSERT INTO private."UserAccounts" ("Id","Email","PasswordHash") VALUES
 
 	
 ALTER SEQUENCE public."Locales_Id_seq" RESTART 1;
-INSERT INTO public."Locales" ("Address","Suburb","PostCode","State", "TaxRate", "UserId") VALUES ('51 Parade Ave','Mooe Park','2021','NSW', 10, 1);
-INSERT INTO public."Locales" ("Address","Suburb","PostCode","State", "TaxRate", "UserId") VALUES ('Meblourne Criket Groud','Albert Park','3021','VIC', 10, 1);
-INSERT INTO public."Locales" ("Address","Suburb","PostCode","State", "TaxRate", "UserId") VALUES ('Subiaco Oval','Subiaco','6008','WA', 10, 1);
+INSERT INTO public."Locales" ("Address","Suburb","PostCode","State", "TaxRate", "CreatedByUserId") VALUES ('51 Parade Ave','Mooe Park','2021','NSW', 10, 1);
+INSERT INTO public."Locales" ("Address","Suburb","PostCode","State", "TaxRate", "CreatedByUserId") VALUES ('Meblourne Criket Groud','Albert Park','3021','VIC', 10, 1);
+INSERT INTO public."Locales" ("Address","Suburb","PostCode","State", "TaxRate", "CreatedByUserId") VALUES ('Subiaco Oval','Subiaco','6008','WA', 10, 1);
 
 alter table public."Users" add CONSTRAINT FK_User_Locale FOREIGN KEY ("LocaleId") REFERENCES public."Locales"("Id");
 
@@ -224,14 +227,15 @@ CREATE TABLE public."Employees" (
 	"Active" bool NOT NULL DEFAULT true,
 	"Leave" timestamptz NULL,
 	"ReturnFromLeave" timestamptz NULL,
-	"UserId" int not null default public.fn_current_user_id() references public."Users"("Id"),
-	"ModifiedBy" int4 NULL,
+	"CreatedByUserId" int not null default public.fn_current_user_id() references public."Users"("Id"),
+	"ModifiedByUserId" int4 NULL,
 	"DateCreated" timestamptz NOT NULL default now(),
 	"DateModified" timestamptz NULL,
-	CONSTRAINT Resource_pkey PRIMARY KEY ("Id"),
-	CONSTRAINT FK_Resource_Locale FOREIGN KEY ("LocaleId") REFERENCES public."Locales"("Id"),
+	CONSTRAINT Employee_pkey PRIMARY KEY ("Id"),
+	CONSTRAINT FK_Employee_Locale FOREIGN KEY ("LocaleId") REFERENCES public."Locales"("Id"),
 	CONSTRAINT FK_Title_Settings FOREIGN KEY ("TitleSettingId") REFERENCES public."Settings"("Id"),
-	CONSTRAINT FK_Country_Settings FOREIGN KEY ("CountrySettingId") REFERENCES public."Settings"("Id")
+	CONSTRAINT FK_Country_Settings FOREIGN KEY ("CountrySettingId") REFERENCES public."Settings"("Id"),
+	CONSTRAINT FK_Employee_EditUsers FOREIGN KEY ("ModifiedByUserId") REFERENCES public."Users"("Id")
 );
 
 
@@ -274,15 +278,16 @@ CREATE TABLE public."Attendees" (
 	"CountrySettingId" int4 NULL,
 	"DateOfBirth" Date NULL,
 	"Active" bool NOT NULL DEFAULT true,
-	"UserId" int not null default public.fn_current_user_id() references public."Users"("Id"),
-	"ModifiedBy" int4 NULL,
+	"CreatedByUserId" int not null default public.fn_current_user_id() references public."Users"("Id"),
+	"ModifiedByUserId" int4 NULL,
 	"DateCreated" timestamptz NOT NULL default now(),
 	"DateModified" timestamptz NULL,
 	CONSTRAINT attendee_pkey PRIMARY KEY ("Id"),	
 	CONSTRAINT FK_attendee_Locale FOREIGN KEY ("LocaleId") REFERENCES public."Locales"("Id"),
 	CONSTRAINT FK_attendeeTitle_Settings FOREIGN KEY ("TitleSettingId") REFERENCES public."Settings"("Id"),
 	CONSTRAINT FK_attendeeCountry_Settings FOREIGN KEY ("CountrySettingId") REFERENCES public."Settings"("Id"),
-	CONSTRAINT FK_attendeeInd_Settings FOREIGN KEY ("IndustrySettingId") REFERENCES public."Settings"("Id")
+	CONSTRAINT FK_attendeeInd_Settings FOREIGN KEY ("IndustrySettingId") REFERENCES public."Settings"("Id"),
+	CONSTRAINT FK_Attendee_EditUsers FOREIGN KEY ("ModifiedByUserId") REFERENCES public."Users"("Id")
 );
 
 CREATE INDEX attendee_title_idx ON public."Attendees" USING btree ("TitleSettingId");
@@ -318,14 +323,15 @@ CREATE TABLE public."Events" (
 	"Price" decimal(19,2) NOT NULL DEFAULT 0,
 	"MaxCapacity" int4 NOT NULL DEFAULT 10,
 	"SendReminder" bool NULL,
-	"UserId" int not null default public.fn_current_user_id() references public."Users"("Id"),
-	"ModifiedBy" int4 NULL,
+	"CreatedByUserId" int not null default public.fn_current_user_id() references public."Users"("Id"),
+	"ModifiedByUserId" int4 NULL,
 	"DateCreated" timestamptz NOT NULL default now(),
 	"DateModified" timestamptz NULL,
 	CONSTRAINT Events_pkey PRIMARY KEY ("Id"),
 	CONSTRAINT FK_Events_Employee FOREIGN KEY ("EmployeeId") REFERENCES public."Employees"("Id"),	
 	CONSTRAINT FK_Events_Banner FOREIGN KEY ("BannerId") REFERENCES public."Banners"("Id"),	
-	CONSTRAINT FK_Events_Locale FOREIGN KEY ("LocaleId") REFERENCES public."Locales"("Id")
+	CONSTRAINT FK_Events_Locale FOREIGN KEY ("LocaleId") REFERENCES public."Locales"("Id"),
+	CONSTRAINT FK_Event_EditUsers FOREIGN KEY ("ModifiedByUserId") REFERENCES public."Users"("Id")
 );
 CREATE INDEX Events_LocaleStartEnd_idx ON public."Events" ("LocaleId","StartTime","EndTime");
 
@@ -351,13 +357,14 @@ CREATE TABLE public."EventAttendees" (
 	"InAttendence" bool NOT NULL DEFAULT FALSE,
 	"Cancelled" bool NOT NULL DEFAULT FALSE,
 	"SurveyRating" int4 NULL,
-	"UserId" int not null default public.fn_current_user_id() references public."Users"("Id"),
-	"ModifiedBy" int4 NULL,
+	"CreatedByUserId" int not null default public.fn_current_user_id() references public."Users"("Id"),
+	"ModifiedByUserId" int4 NULL,
 	"DateCreated" timestamptz NOT NULL default now(),
 	"DateModified" timestamptz NULL,
 	CONSTRAINT EventAttendees_pkey PRIMARY KEY ("Id"),
 	CONSTRAINT FK_EventAttendees_Events FOREIGN KEY ("EventId") REFERENCES public."Events"("Id") on delete cascade,
-	CONSTRAINT FK_EventAttendees_Attendee FOREIGN KEY ("AttendeeId") REFERENCES public."Attendees"("Id")
+	CONSTRAINT FK_EventAttendees_Attendee FOREIGN KEY ("AttendeeId") REFERENCES public."Attendees"("Id"),
+	CONSTRAINT FK_EventAttendee_EditUsers FOREIGN KEY ("ModifiedByUserId") REFERENCES public."Users"("Id")
 );
 CREATE INDEX EventAttendees_Attendeeid_idx ON public."EventAttendees" USING btree ("AttendeeId");
 CREATE INDEX EventAttendees_Eventid_idx ON public."EventAttendees" USING btree ("EventId");
@@ -844,88 +851,88 @@ INSERT INTO public."Banners" ("Url","IsDeleted") VALUES
 
 	
 ALTER SEQUENCE public."Employees_Id_seq" RESTART 1;
-INSERT INTO public."Employees" ("LocaleId","TitleSettingId","FirstName","LastName","Phone","Mobile","Email","CountrySettingId", "Sex","DateOfBirth","Active","UserId","ModifiedBy","DateCreated","DateModified") VALUES
+INSERT INTO public."Employees" ("LocaleId","TitleSettingId","FirstName","LastName","Phone","Mobile","Email","CountrySettingId", "Sex","DateOfBirth","Active","CreatedByUserId","ModifiedByUserId","DateCreated","DateModified") VALUES
 	 (1,random() * 8 + 8, 'Employee','A',NULL,'0412 234 567','info@JeremyThompson.Net',1715,1,'2000-01-01', true,1,NULL,'2022-01-01 00:00:00+11',NULL);
-INSERT INTO public."Employees" ("LocaleId","TitleSettingId","FirstName","LastName","Phone","Mobile","Email","CountrySettingId", "Sex","DateOfBirth","Active","UserId","ModifiedBy","DateCreated","DateModified") VALUES
+INSERT INTO public."Employees" ("LocaleId","TitleSettingId","FirstName","LastName","Phone","Mobile","Email","CountrySettingId", "Sex","DateOfBirth","Active","CreatedByUserId","ModifiedByUserId","DateCreated","DateModified") VALUES
 	 (1,random() * 8 + 8, 'Employee','B',NULL,'0412 234 567','info@JeremyThompson.Net',1715,1,'2000-01-01', true,1,NULL,'2022-01-01 00:00:00+11',NULL);
-INSERT INTO public."Employees" ("LocaleId","TitleSettingId","FirstName","LastName","Phone","Mobile","Email","CountrySettingId", "Sex","DateOfBirth","Active","UserId","ModifiedBy","DateCreated","DateModified") VALUES
+INSERT INTO public."Employees" ("LocaleId","TitleSettingId","FirstName","LastName","Phone","Mobile","Email","CountrySettingId", "Sex","DateOfBirth","Active","CreatedByUserId","ModifiedByUserId","DateCreated","DateModified") VALUES
 	 (1,random() * 8 + 8, 'Employee','C',NULL,'0412 234 567','info@JeremyThompson.Net',1715,1,'2000-01-01', true,1,NULL,'2022-01-01 00:00:00+11',NULL);
-INSERT INTO public."Employees" ("LocaleId","TitleSettingId","FirstName","LastName","Phone","Mobile","Email","CountrySettingId", "Sex","DateOfBirth","Active","UserId","ModifiedBy","DateCreated","DateModified") VALUES
+INSERT INTO public."Employees" ("LocaleId","TitleSettingId","FirstName","LastName","Phone","Mobile","Email","CountrySettingId", "Sex","DateOfBirth","Active","CreatedByUserId","ModifiedByUserId","DateCreated","DateModified") VALUES
 	 (1,random() * 8 + 8, 'Employee','D',NULL,'0412 234 567','info@JeremyThompson.Net',1715,1,'2000-01-01', true,1,NULL,'2022-01-01 00:00:00+11',NULL);
-INSERT INTO public."Employees" ("LocaleId","TitleSettingId","FirstName","LastName","Phone","Mobile","Email","CountrySettingId", "Sex","DateOfBirth","Active","UserId","ModifiedBy","DateCreated","DateModified") VALUES
+INSERT INTO public."Employees" ("LocaleId","TitleSettingId","FirstName","LastName","Phone","Mobile","Email","CountrySettingId", "Sex","DateOfBirth","Active","CreatedByUserId","ModifiedByUserId","DateCreated","DateModified") VALUES
 	 (1,random() * 8 + 8, 'Employee','E',NULL,'0412 234 567','info@JeremyThompson.Net',1715,1,'2000-01-01', true,1,NULL,'2022-01-01 00:00:00+11',NULL);
-INSERT INTO public."Employees" ("LocaleId","TitleSettingId","FirstName","LastName","Phone","Mobile","Email","CountrySettingId", "Sex","DateOfBirth","Active","UserId","ModifiedBy","DateCreated","DateModified") VALUES
+INSERT INTO public."Employees" ("LocaleId","TitleSettingId","FirstName","LastName","Phone","Mobile","Email","CountrySettingId", "Sex","DateOfBirth","Active","CreatedByUserId","ModifiedByUserId","DateCreated","DateModified") VALUES
 	 (1,random() * 8 + 8, 'Employee','F',NULL,'0412 234 567','info@JeremyThompson.Net',1715,1,'2000-01-01', true,1,NULL,'2022-01-01 00:00:00+11',NULL);
 
 	
 	
 
 ALTER SEQUENCE public."Events_Id_seq" RESTART 1;	
-INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","UserId","ModifiedBy","DateCreated","DateModified") VALUES
+INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","CreatedByUserId","ModifiedByUserId","DateCreated","DateModified") VALUES
 	 (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1, 'Event','Address','2022-01-01 00:00:00+11','2022-01-01 00:00:00+11',15, 10, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
 
-INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","UserId","ModifiedBy","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'Unity (NYE make up party)','Metropolis, North Sydney','2022-01-08','2022-01-08',25,3153, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
-INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","UserId","ModifiedBy","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'Night of the living apple heads','Carpark behind the Saloon Bar, Broadway','2022-01-15','2022-01-15',42,3875, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
-INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","UserId","ModifiedBy","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'Cryogenesis','155 Kent St, The Rocks','2022-01-16','2022-01-16',89,1414, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
-INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","UserId","ModifiedBy","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'Carl Cox Mania','Same venue as the first space cadet, the old film studio in Alexandria/Mascot.','2022-01-22','2022-01-22',90,4040, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
-INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","UserId","ModifiedBy","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'braindance','324 King St, Newtown','2022-01-25','2022-01-25',38,1648, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
-INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","UserId","ModifiedBy","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'BDO','Moore Park','2022-01-26','2022-01-26',38,1080, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
-INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","UserId","ModifiedBy","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'Dune','Bumborah point Rd, Port Botany','2022-01-29','2022-01-29',111,1968, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
-INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","UserId","ModifiedBy","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'Free Thought','324 King ST, Newtown','2022-02-12','2022-02-12',100,4349, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
-INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","UserId","ModifiedBy","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'High Times','Bay 33, 33 Bayswater Rd, Kings Cross','2022-02-17','2022-02-17',88,4862, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
-INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","UserId","ModifiedBy","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'Heaven',' Metropolis, North Sydney','2022-03-05','2022-03-05',114,1157, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
-INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","UserId","ModifiedBy","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'B''day','201 Elizabeth Street, Sydney','2022-03-19','2022-03-19',36,1416, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
-INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","UserId","ModifiedBy","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'Alphebet soup','Alexandria','2022-03-26','2022-03-26',62,4157, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
-INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","UserId","ModifiedBy","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'Prodigy 5 The Beehive','Warehouse, Footbridge Boulevard, Homebush Bay - Add more description','2022-04-02','2022-04-02',44,4473, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
-INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","UserId","ModifiedBy","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'Platform 94 recovery','Mortuary','2022-04-10','2022-04-10',25,1632, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
-INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","UserId","ModifiedBy","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'Astral Flight','carpark behind the Saloon Bar','2022-04-16','2022-04-16',43,417, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
-INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","UserId","ModifiedBy","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'Tribal - The Last Dance','Was this one Alexandria or down at Kernel/Botany?','2022-04-23','2022-04-23',26,2051, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
-INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","UserId","ModifiedBy","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'Bonzai','carpark behind the Saloon Bar','2022-04-30','2022-04-30',114,253, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
-INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","UserId","ModifiedBy","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'Mayday','State Sports Centre, Homebush','2022-05-21','2022-05-21',49,1887, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
-INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","UserId","ModifiedBy","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'Space Cadet 3','warehouse on Botany Rd, Alexandria, just near the Grafitti Hall Of Fame','2022-05-28','2022-05-28',33,3133, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
-INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","UserId","ModifiedBy","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'Sproket (recovery)','Grafitti Hall of Fame','2022-05-29','2022-05-29',23,1503, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
-INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","UserId","ModifiedBy","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'The Strawberry Patch','GHOF','2022-06-04','2022-06-04',33,2999, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
-INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","UserId","ModifiedBy","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'The Prodigy','Zoom - Oxford St Darlinghurst','2022-06-10','2022-06-10',36,1714, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
-INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","UserId","ModifiedBy","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'Roger Ramjet','HardCore Café','2022-06-18','2022-06-18',110,1987, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
-INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","UserId","ModifiedBy","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'Zero 1  U/18','DeJa-Vu 252 Pitt St, Sydney','2022-06-27','2022-06-27',103,1735, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
-INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","UserId","ModifiedBy","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'Tribal 2 years on DJ Yellow','Ricketty St next to the Alexandria Canal','2022-07-02','2022-07-02',59,1507, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
-INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","UserId","ModifiedBy","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'Zero 2 U/18','DeJa-Vu 252 Pitt St, Sydney','2022-07-04','2022-07-04',59,1681, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
-INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","UserId","ModifiedBy","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'Moove',' The Teachers Club on Bathurst St','2022-07-09','2022-07-09',50,1079, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
-INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","UserId","ModifiedBy","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'Pilgrin','Rooftop','2022-07-15','2022-07-15',59,4036, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
-INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","UserId","ModifiedBy","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'Itchy & Scratchy',' Ashfield','2022-07-16','2022-07-16',76,1891, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
-INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","UserId","ModifiedBy","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'Smurf Village 1','Hardcore Cafe, wicked tent','2022-08-06','2022-08-06',40,1979, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
-INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","UserId","ModifiedBy","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'Transcendence','Agincourt Hotel, Harris St Ultimo','2022-08-12','2022-08-12',100,3770, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
-INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","UserId","ModifiedBy","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'Gatorave','Canberra?','2022-08-13','2022-08-13',56,3396, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
-INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","UserId","ModifiedBy","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'Colossuss','State Sports Centre, Homebush','2022-08-20','2022-08-20',99,3516, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
-INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","UserId","ModifiedBy","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'cloud 9','Kingshead Tavern','2022-08-26','2022-08-26',25,1207, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
-INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","UserId","ModifiedBy","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'Jurassic Rave','Agincourt / Hardcore Café','2022-08-27','2022-08-27',75,1720, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
-INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","UserId","ModifiedBy","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'Odyssey','Outdoors ANU (Australian National University )Fellows Oval, Canberra','2022-09-09','2022-09-09',120,3338, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
-INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","UserId","ModifiedBy","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'Peak','carpark off Parammata Rd, Broadway, underground behind building opposite central','2022-09-10','2022-09-10',82,3960, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
-INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","UserId","ModifiedBy","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'Bulb and Away','right next door to the original Sublime club on Pitt St','2022-09-17','2022-09-17',70,1643, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
-INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","UserId","ModifiedBy","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'Pleasure Dome 94','111 Airds Rd, Lumeah down the road from the train station at a warehouse','2022-09-24','2022-09-24',31,3831, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
-INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","UserId","ModifiedBy","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'Fantazia - The second Sight','Hardcore Café','2022-10-08','2022-10-08',110,2606, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
-INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","UserId","ModifiedBy","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'Section 5','block of Flats Strathfield- underground rave - Brenden''s 21st Strathfield','2022-10-15','2022-10-15',69,4445, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
-INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","UserId","ModifiedBy","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'Level X','at fitness gym on Paramatta Rd Granville','2022-10-22','2022-10-22',46,873, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
-INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","UserId","ModifiedBy","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'Thomas P Heckman - Totem','','2022-11-04','2022-11-04',57,3358, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
-INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","UserId","ModifiedBy","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'Free Night at Hardcore Café - Delerious','','2022-11-05','2022-11-05',118,4386, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
-INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","UserId","ModifiedBy","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'K KLass','Zoom Nightclub, 163 Oxford St, Darlinghurst','2022-11-11','2022-11-11',57,1923, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
-INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","UserId","ModifiedBy","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'punos: brings you','Santuary Studio Café, 173 Campbell St Surry Hills','2022-11-13','2022-11-13',99,4315, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
-INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","UserId","ModifiedBy","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'Solidarity','Hordern','2022-11-18','2022-11-18',83,2819, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
-INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","UserId","ModifiedBy","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'Passion','pub in the city','2022-11-19','2022-11-19',83,982, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
-INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","UserId","ModifiedBy","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'Pleasuredome','warehouse down Campbeltown way.','2022-11-24','2022-11-24',21,2265, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
-INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","UserId","ModifiedBy","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'Space Cadet 33 1/3','massive factory/warehouse at botany/Alexandria','2022-11-26','2022-11-26',39,3194, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
-INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","UserId","ModifiedBy","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'MDMA','canterbury rd near the bankstown airport.','2022-12-03','2022-12-03',88,2220, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
-INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","UserId","ModifiedBy","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'Magik Mountain','katoomba community centre','2022-12-10','2022-12-10',102,4743, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
-INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","UserId","ModifiedBy","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'Beyond Reality','','2022-12-16','2022-12-16',27,2475, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
-INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","UserId","ModifiedBy","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'Perception','Harris st carpark?','2022-12-17','2022-12-17',33,2669, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
-INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","UserId","ModifiedBy","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'Dyewitness','old court house near Taylor Square, Dalinghurst','2022-12-24','2022-12-24',79,768, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
-INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","UserId","ModifiedBy","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'Prodigy 6 Rave Paragon','Warehouse near Rosehill Racecourse','2022-12-31','2022-12-31',87,2568, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
+INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","CreatedByUserId","ModifiedByUserId","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'Unity (NYE make up party)','Metropolis, North Sydney','2022-01-08','2022-01-08',25,3153, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
+INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","CreatedByUserId","ModifiedByUserId","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'Night of the living apple heads','Carpark behind the Saloon Bar, Broadway','2022-01-15','2022-01-15',42,3875, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
+INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","CreatedByUserId","ModifiedByUserId","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'Cryogenesis','155 Kent St, The Rocks','2022-01-16','2022-01-16',89,1414, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
+INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","CreatedByUserId","ModifiedByUserId","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'Carl Cox Mania','Same venue as the first space cadet, the old film studio in Alexandria/Mascot.','2022-01-22','2022-01-22',90,4040, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
+INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","CreatedByUserId","ModifiedByUserId","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'braindance','324 King St, Newtown','2022-01-25','2022-01-25',38,1648, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
+INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","CreatedByUserId","ModifiedByUserId","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'BDO','Moore Park','2022-01-26','2022-01-26',38,1080, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
+INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","CreatedByUserId","ModifiedByUserId","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'Dune','Bumborah point Rd, Port Botany','2022-01-29','2022-01-29',111,1968, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
+INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","CreatedByUserId","ModifiedByUserId","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'Free Thought','324 King ST, Newtown','2022-02-12','2022-02-12',100,4349, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
+INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","CreatedByUserId","ModifiedByUserId","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'High Times','Bay 33, 33 Bayswater Rd, Kings Cross','2022-02-17','2022-02-17',88,4862, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
+INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","CreatedByUserId","ModifiedByUserId","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'Heaven',' Metropolis, North Sydney','2022-03-05','2022-03-05',114,1157, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
+INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","CreatedByUserId","ModifiedByUserId","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'B''day','201 Elizabeth Street, Sydney','2022-03-19','2022-03-19',36,1416, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
+INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","CreatedByUserId","ModifiedByUserId","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'Alphebet soup','Alexandria','2022-03-26','2022-03-26',62,4157, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
+INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","CreatedByUserId","ModifiedByUserId","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'Prodigy 5 The Beehive','Warehouse, Footbridge Boulevard, Homebush Bay - Add more description','2022-04-02','2022-04-02',44,4473, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
+INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","CreatedByUserId","ModifiedByUserId","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'Platform 94 recovery','Mortuary','2022-04-10','2022-04-10',25,1632, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
+INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","CreatedByUserId","ModifiedByUserId","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'Astral Flight','carpark behind the Saloon Bar','2022-04-16','2022-04-16',43,417, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
+INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","CreatedByUserId","ModifiedByUserId","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'Tribal - The Last Dance','Was this one Alexandria or down at Kernel/Botany?','2022-04-23','2022-04-23',26,2051, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
+INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","CreatedByUserId","ModifiedByUserId","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'Bonzai','carpark behind the Saloon Bar','2022-04-30','2022-04-30',114,253, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
+INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","CreatedByUserId","ModifiedByUserId","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'Mayday','State Sports Centre, Homebush','2022-05-21','2022-05-21',49,1887, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
+INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","CreatedByUserId","ModifiedByUserId","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'Space Cadet 3','warehouse on Botany Rd, Alexandria, just near the Grafitti Hall Of Fame','2022-05-28','2022-05-28',33,3133, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
+INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","CreatedByUserId","ModifiedByUserId","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'Sproket (recovery)','Grafitti Hall of Fame','2022-05-29','2022-05-29',23,1503, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
+INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","CreatedByUserId","ModifiedByUserId","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'The Strawberry Patch','GHOF','2022-06-04','2022-06-04',33,2999, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
+INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","CreatedByUserId","ModifiedByUserId","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'The Prodigy','Zoom - Oxford St Darlinghurst','2022-06-10','2022-06-10',36,1714, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
+INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","CreatedByUserId","ModifiedByUserId","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'Roger Ramjet','HardCore Café','2022-06-18','2022-06-18',110,1987, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
+INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","CreatedByUserId","ModifiedByUserId","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'Zero 1  U/18','DeJa-Vu 252 Pitt St, Sydney','2022-06-27','2022-06-27',103,1735, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
+INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","CreatedByUserId","ModifiedByUserId","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'Tribal 2 years on DJ Yellow','Ricketty St next to the Alexandria Canal','2022-07-02','2022-07-02',59,1507, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
+INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","CreatedByUserId","ModifiedByUserId","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'Zero 2 U/18','DeJa-Vu 252 Pitt St, Sydney','2022-07-04','2022-07-04',59,1681, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
+INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","CreatedByUserId","ModifiedByUserId","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'Moove',' The Teachers Club on Bathurst St','2022-07-09','2022-07-09',50,1079, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
+INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","CreatedByUserId","ModifiedByUserId","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'Pilgrin','Rooftop','2022-07-15','2022-07-15',59,4036, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
+INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","CreatedByUserId","ModifiedByUserId","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'Itchy & Scratchy',' Ashfield','2022-07-16','2022-07-16',76,1891, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
+INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","CreatedByUserId","ModifiedByUserId","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'Smurf Village 1','Hardcore Cafe, wicked tent','2022-08-06','2022-08-06',40,1979, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
+INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","CreatedByUserId","ModifiedByUserId","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'Transcendence','Agincourt Hotel, Harris St Ultimo','2022-08-12','2022-08-12',100,3770, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
+INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","CreatedByUserId","ModifiedByUserId","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'Gatorave','Canberra?','2022-08-13','2022-08-13',56,3396, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
+INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","CreatedByUserId","ModifiedByUserId","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'Colossuss','State Sports Centre, Homebush','2022-08-20','2022-08-20',99,3516, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
+INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","CreatedByUserId","ModifiedByUserId","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'cloud 9','Kingshead Tavern','2022-08-26','2022-08-26',25,1207, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
+INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","CreatedByUserId","ModifiedByUserId","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'Jurassic Rave','Agincourt / Hardcore Café','2022-08-27','2022-08-27',75,1720, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
+INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","CreatedByUserId","ModifiedByUserId","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'Odyssey','Outdoors ANU (Australian National University )Fellows Oval, Canberra','2022-09-09','2022-09-09',120,3338, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
+INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","CreatedByUserId","ModifiedByUserId","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'Peak','carpark off Parammata Rd, Broadway, underground behind building opposite central','2022-09-10','2022-09-10',82,3960, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
+INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","CreatedByUserId","ModifiedByUserId","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'Bulb and Away','right next door to the original Sublime club on Pitt St','2022-09-17','2022-09-17',70,1643, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
+INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","CreatedByUserId","ModifiedByUserId","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'Pleasure Dome 94','111 Airds Rd, Lumeah down the road from the train station at a warehouse','2022-09-24','2022-09-24',31,3831, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
+INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","CreatedByUserId","ModifiedByUserId","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'Fantazia - The second Sight','Hardcore Café','2022-10-08','2022-10-08',110,2606, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
+INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","CreatedByUserId","ModifiedByUserId","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'Section 5','block of Flats Strathfield- underground rave - Brenden''s 21st Strathfield','2022-10-15','2022-10-15',69,4445, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
+INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","CreatedByUserId","ModifiedByUserId","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'Level X','at fitness gym on Paramatta Rd Granville','2022-10-22','2022-10-22',46,873, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
+INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","CreatedByUserId","ModifiedByUserId","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'Thomas P Heckman - Totem','','2022-11-04','2022-11-04',57,3358, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
+INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","CreatedByUserId","ModifiedByUserId","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'Free Night at Hardcore Café - Delerious','','2022-11-05','2022-11-05',118,4386, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
+INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","CreatedByUserId","ModifiedByUserId","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'K KLass','Zoom Nightclub, 163 Oxford St, Darlinghurst','2022-11-11','2022-11-11',57,1923, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
+INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","CreatedByUserId","ModifiedByUserId","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'punos: brings you','Santuary Studio Café, 173 Campbell St Surry Hills','2022-11-13','2022-11-13',99,4315, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
+INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","CreatedByUserId","ModifiedByUserId","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'Solidarity','Hordern','2022-11-18','2022-11-18',83,2819, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
+INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","CreatedByUserId","ModifiedByUserId","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'Passion','pub in the city','2022-11-19','2022-11-19',83,982, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
+INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","CreatedByUserId","ModifiedByUserId","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'Pleasuredome','warehouse down Campbeltown way.','2022-11-24','2022-11-24',21,2265, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
+INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","CreatedByUserId","ModifiedByUserId","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'Space Cadet 33 1/3','massive factory/warehouse at botany/Alexandria','2022-11-26','2022-11-26',39,3194, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
+INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","CreatedByUserId","ModifiedByUserId","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'MDMA','canterbury rd near the bankstown airport.','2022-12-03','2022-12-03',88,2220, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
+INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","CreatedByUserId","ModifiedByUserId","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'Magik Mountain','katoomba community centre','2022-12-10','2022-12-10',102,4743, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
+INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","CreatedByUserId","ModifiedByUserId","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'Beyond Reality','','2022-12-16','2022-12-16',27,2475, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
+INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","CreatedByUserId","ModifiedByUserId","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'Perception','Harris st carpark?','2022-12-17','2022-12-17',33,2669, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
+INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","CreatedByUserId","ModifiedByUserId","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'Dyewitness','old court house near Taylor Square, Dalinghurst','2022-12-24','2022-12-24',79,768, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
+INSERT INTO public."Events" ("EmployeeId","LocaleId","BannerId","Description","Address","StartTime","EndTime","Price","MaxCapacity","SendReminder","CreatedByUserId","ModifiedByUserId","DateCreated","DateModified") VALUES (random() * 5 + 1,random() * 2 + 1, random() * 6 + 1,'Prodigy 6 Rave Paragon','Warehouse near Rosehill Racecourse','2022-12-31','2022-12-31',87,2568, true,1,NULL,'2022-01-01 00:00:00+11',NULL);
 
 
 
 
 ALTER SEQUENCE public."Attendees_Id_seq" RESTART 1;	
---INSERT INTO public."Attendees" ("LocaleId","TitleSettingId","FirstName","LastName","Phone","Mobile","Email","CountrySettingId","Sex","DateOfBirth","Active","UserId","ModifiedBy","DateCreated","DateModified") VALUES
+--INSERT INTO public."Attendees" ("LocaleId","TitleSettingId","FirstName","LastName","Phone","Mobile","Email","CountrySettingId","Sex","DateOfBirth","Active","CreatedByUserId","ModifiedByUserId","DateCreated","DateModified") VALUES
 --	 (1,random() * 8 + 1, 'Attendee','A',NULL,'0412 234 567','info@JeremyThompson.Net',1, 1,'2000-01-01', true,1,NULL,'2022-01-01 00:00:00+11',NULL);
 	
 DO $$
@@ -933,7 +940,7 @@ DECLARE
 _id int :=0;
 BEGIN
 	WHILE _id < 801 LOOP
-INSERT INTO public."Attendees" ("LocaleId","TitleSettingId","FirstName","LastName","IndustrySettingId","Phone","Mobile","Email","CountrySettingId","Sex","DateOfBirth","Active","UserId","ModifiedBy","DateCreated","DateModified") VALUES
+INSERT INTO public."Attendees" ("LocaleId","TitleSettingId","FirstName","LastName","IndustrySettingId","Phone","Mobile","Email","CountrySettingId","Sex","DateOfBirth","Active","CreatedByUserId","ModifiedByUserId","DateCreated","DateModified") VALUES
 	 (1,random() * 8 + 9 , 'Attendee ' || _id::text, _id::text, (select "Id" from "Settings" s where s."Id" > 1198 and s."Id" < 1700 ORDER BY random() LIMIT 1),
 	null, '0412 234 567','info@JeremyThompson.Net', random() * 250 + 1700, random() * 1,'2000-01-01', true,1,NULL,'2022-01-01 00:00:00+11',NULL);
 	_id := _id+1;

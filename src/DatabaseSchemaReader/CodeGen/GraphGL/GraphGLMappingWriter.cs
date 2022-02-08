@@ -121,11 +121,10 @@ namespace DatabaseSchemaReader.CodeGen.GraphGL
                     sb.Append(letter);
                     sb.Append(".Get");
                     sb.Append(fKeyTableName);
-                    sb.Append(".By");
+                    sb.Append("By");
                     sb.Append(fKey.Columns[0]);
 
-                    if (_singleTableKeyResolverLookUps.Contains(fKey)) continue;
-                    _singleTableKeyResolverLookUps.Add(fKey);
+                    if (!_singleTableKeyResolverLookUps.Contains(fKey)) _singleTableKeyResolverLookUps.Add(fKey);
                 }
                 else
                 {
@@ -174,6 +173,7 @@ namespace DatabaseSchemaReader.CodeGen.GraphGL
                             StringBuilder sb = new StringBuilder();
                             sb.Append("return context.");
                             sb.Append(resolver.TableName);
+                            letter = resolver.TableName[0];
                             sb.Append(".Where(");
                             sb.Append(letter);
                             sb.Append(" => ");
@@ -204,6 +204,7 @@ namespace DatabaseSchemaReader.CodeGen.GraphGL
                     {
                         sb.Append("return context.");
                         sb.Append(lookup.TableName);
+                        letter = lookup.TableName[0];
                         sb.Append(".Where(");
                         sb.Append(letter);
                         sb.Append(" => ");
@@ -226,6 +227,8 @@ namespace DatabaseSchemaReader.CodeGen.GraphGL
                         continue;
 
                     string fKeyTableName = NameFixer.MakeSingular(fKey.RefersToTable);
+                    letter = fKeyTableName[0];
+
                     // When we encounter a foreign key column that doesn't map to the 'Table-Id' convention, then there could be multiple of these columns so we need to name the methods uniquely from GetSomeThing to GetSomeThing-BySomeThingID:
                     if (NameFixer.RemoveId(fKey.Columns[0]) != fKeyTableName && fKey.Columns[0].Contains("Id"))
                     {

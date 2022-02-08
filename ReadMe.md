@@ -28,8 +28,9 @@ For .Net Core, we support SqlServer, SqlServer CE 4, SQLite, PostgreSql, MySQL a
 
 ## History - dB2GraphQL.Net
 
+1.10:	Added a Postgres Test Database ""4. to demonstrate Singular Tables (Many-Columns-To-One-'Settings'-Table Relationships)"", plus tweaks to Config/Descriptors/Resolvers for Singular Tables
 1.09	Added a ReadMe and included an animated gif with instructions on how to use the system  
-1.08:	Support for Circular References, Sqlite Driver and an example Sqlite Database to demonstrate Circular References  
+1.08:	Support for Circular References, Sqlite Driver and an example Sqlite Database to demonstrate Circular References ""3. Sqlite CircularRef - SeparationOfPowers""
 1.07:	Support for PostGres Driver   
 1.06:	Support for Singular Tables (Many-Columns-To-One-'Settings'-Table Relationships)  
 1.05:	Support got GraphQL Attributes [UseProjections], [Parent] and Decimal Types with Annotations  
@@ -106,12 +107,18 @@ Its critical you manually fix these up. In the case of Enums you need to manuall
 
 - You can have tables with columns that refer to one table. See the Settings table in the Test Database example "4. PostgreSQL Singular Settings Table - EventOrganiser".
 
-- Sometimes it's not possible to honor the Table-Id convention. A common scenario is having columns named 'CreatedBy' and 'ModifiedBy' and that's fine
-unless they're foreign keys to the User table. If it was one field then it should be called 'UserId' instead of 'CreatedBy', however we can't have
-two columns named 'UserId'. Therefore in this case we keep 'CreatedBy' and 'ModifiedBy' and manually tweak the codebase to suit.
+- You can use Single Table Inheritance https://www.martinfowler.com/eaaCatalog/singleTableInheritance.html. Essentially a single table to hold all the 
+settings/values of multiple small tables, with a structure such as: Id|ParentCodeId|CodeId|Setting|Value|Description|IsDeleted). 
 
-- You can use Single Table Inheritance https://www.martinfowler.com/eaaCatalog/singleTableInheritance.html (eg a single table to hold all the 
-settings/values of multiple small tables: Id|ParentCodeId|CodeId|Setting|Value|Description|IsDeleted). 
+- Sometimes it's not possible to honor the Table-Id relationship naming convention. A common scenario is having columns named 'CreatedBy' and 'ModifiedBy' 
+and that's fine unless they're foreign keys to the User table. If it was one field then it should be called 'UserId' instead of 'CreatedBy', however we can't have
+two columns named 'UserId'. In this case we can use the Singular Table design and name the columns 'CreatedByUserId' and 'ModifiedByUserId' which is explained next. 
+
+- In Test Databses 4. PostgreSQL Singular Settings Table - EventOrganiser.sql, I demo using a single Settings table to hold Industry, Title & Country values
+that are shared to multiple tables. Notice the naming convention IndustrySettingId, TitleSettingId, CountrySettingId. Same as I did with CreatedByUserID:
+
+![Single Settings Table](/Media/4.%20PostgreSQL%20Singular%20Settings%20Table%20-%20EventOrganiser.png "Many-Columns-To-One")  
+
 
 ## Reserved Keywords
 

@@ -84,6 +84,7 @@ namespace DatabaseSchemaReader.CodeGen.GraphGL
                 {
                     primaryKey = lookup.Columns[0];
                     table = NameFixer.MakeSingular(lookup.TableName);
+                    reftable = NameFixer.MakeSingular(lookup.RefersToTable);
                     string singleFKeyWithoutId = NameFixer.RemoveId(primaryKey);
                     string singleFKey = table + new PluralizingNamer().NameCollection(singleFKeyWithoutId);
                    
