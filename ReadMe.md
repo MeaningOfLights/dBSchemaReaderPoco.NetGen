@@ -28,17 +28,17 @@ For .Net Core, we support SqlServer, SqlServer CE 4, SQLite, PostgreSql, MySQL a
 
 ## History - dB2GraphQL.Net
 
-1.10:	Added a Postgres Test Database ""4. to demonstrate Singular Tables (Many-Columns-To-One-'Settings'-Table Relationships)"", plus tweaks to Config/Descriptors/Resolvers for Singular Tables
-1.09	Added a ReadMe and included an animated gif with instructions on how to use the system  
-1.08:	Support for Circular References, Sqlite Driver and an example Sqlite Database to demonstrate Circular References ""3. Sqlite CircularRef - SeparationOfPowers""
-1.07:	Support for PostGres Driver   
-1.06:	Support for Singular Tables (Many-Columns-To-One-'Settings'-Table Relationships)  
-1.05:	Support got GraphQL Attributes [UseProjections], [Parent] and Decimal Types with Annotations  
-1.04:	Support for Many-To-Many Relationships  
-1.03:	Validation of Database Schema for GraphQL POCO Models  
-1.02:	Completed GraphQL POCO Model generation with Foreign Keys, Resolvers, Descriptors & etc  
-1.01:	Built in generator for GraphQL POCO Models	  
-1.00:	Forked project from https://github.com/martinjw/dbschemareader
+* 1.10:	Added a Postgres Test Database ""4. to demonstrate Singular Tables (Many-Columns-To-One-'Settings'-Table Relationships)"", plus tweaks to Config/Descriptors/Resolvers for Singular Tables
+* 1.09	Added a ReadMe and included an animated gif with instructions on how to use the system  
+* 1.08:	Support for Circular References, Sqlite Driver and an example Sqlite Database to demonstrate Circular References ""3. Sqlite CircularRef - SeparationOfPowers""
+* 1.07:	Support for PostGres Driver   
+* 1.06:	Support for Singular Tables (Many-Columns-To-One-'Settings'-Table Relationships)  
+* 1.05:	Support got GraphQL Attributes [UseProjections], [Parent] and Decimal Types with Annotations  
+* 1.04:	Support for Many-To-Many Relationships  
+* 1.03:	Validation of Database Schema for GraphQL POCO Models  
+* 1.02:	Completed GraphQL POCO Model generation with Foreign Keys, Resolvers, Descriptors & etc  
+* 1.01:	Built in generator for GraphQL POCO Models	  
+* 1.00:	Forked project from https://github.com/martinjw/dbschemareader
 
 ## Not Supported
 
